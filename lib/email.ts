@@ -1,5 +1,4 @@
 // lib/email.ts
-import { Resend } from 'resend'
 import type { LeadWithComputed } from '@/types'
 
 export async function sendOverdueDigest(leads: LeadWithComputed[]) {
