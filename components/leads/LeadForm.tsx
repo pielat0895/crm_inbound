@@ -142,7 +142,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
           <Field label="Sito web aziendale" name="company_web" />
           <div className="space-y-1">
             <Label>Hanno sito</Label>
-            <Select value={form.hanno_sito} onValueChange={v => set('hanno_sito', v)}>
+            <Select value={form.hanno_sito ?? ''} onValueChange={v => set('hanno_sito', v ?? '')}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="true">Sì</SelectItem>
@@ -152,7 +152,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
           </div>
           <div className="space-y-1">
             <Label>Esperienza US</Label>
-            <Select value={form.esperienza_us} onValueChange={v => set('esperienza_us', v)}>
+            <Select value={form.esperienza_us ?? ''} onValueChange={v => set('esperienza_us', v ?? '')}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="true">Sì</SelectItem>
@@ -172,7 +172,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>Stadio</Label>
-            <Select value={form.stadio_pipeline} onValueChange={v => set('stadio_pipeline', v)}>
+            <Select value={form.stadio_pipeline ?? 'Nuovo'} onValueChange={v => set('stadio_pipeline', v ?? 'Nuovo')}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {stages.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
