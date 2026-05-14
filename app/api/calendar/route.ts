@@ -18,7 +18,12 @@ export async function POST(request: NextRequest) {
   const summary = `Ricontattare: ${name}${lead.azienda ? ` — ${lead.azienda}` : ''}`
   const leadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/leads/${lead_id}`
 
-  await createReminderEvent({ summary, date: lead.ricontattare, leadUrl })
+  try {
+    await createReminderEvent({ summary, date: lead.ricontattare, leadUrl })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Calendar error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }
