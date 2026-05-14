@@ -7,10 +7,11 @@ import { Badge } from '@/components/ui/badge'
 
 export default async function DashboardPage() {
   const supabase = createServiceClient()
-  const [{ data: leads }, settings] = await Promise.all([
+  const [{ data: leads, error: leadsError }, settings] = await Promise.all([
     supabase.from('leads').select('*'),
     getSettings(),
   ])
+  console.log('[dashboard] leads count:', leads?.length, '| error:', leadsError?.message)
 
   const allLeads = (leads ?? []).map(l => computeLeadFields(l))
   const openLeads = allLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
