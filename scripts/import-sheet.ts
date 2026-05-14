@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-// Load .env.local manually
 import { config } from 'dotenv'
 config({ path: resolve(process.cwd(), '.env.local') })
 
@@ -12,10 +11,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Map CSV column headers → DB field names
-// Update keys to match your exact Google Sheet column headers
 const COLUMN_MAP: Record<string, string> = {
-  'Data apertura': 'data_apertura',
+  'Data_apertura': 'data_apertura',
   'Nome': 'nome',
   'Cognome': 'cognome',
   'Azienda': 'azienda',
@@ -39,32 +36,104 @@ const COLUMN_MAP: Record<string, string> = {
   'Company Web': 'company_web',
   'Dipendenti': 'dipendenti',
   'Note': 'note',
-  'Touchpoints': 'touchpoints',
   'Numero messaggi': 'numero_messaggi',
   'Risposto Ultima Mail': 'risposto_ultima_mail',
   'Data Ultimo Contatto': 'data_ultimo_contatto',
 }
 
 function parseCSV(content: string): Record<string, string>[] {
-  const lines = content.split('\n').filter(l => l.trim())
-  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim())
-  return lines.slice(1).map(line => {
-    const values = line.match(/("([^"]*)")|([^,]+)|(?<=,)(?=,|$)/g) ?? []
-    const row: Record<string, string> = {}
-    headers.forEach((h, i) => {
-      row[h] = (values[i] ?? '').replace(/^"|"$/g, '').trim()
+  const rows: string[][] = []
+  let currentRow: string[] = []
+  let currentCell = ''
+  let inQuotes = false
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i]
+    const nextChar = content[i + 1]
+
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        currentCell += '"'
+        i++
+      } else if (char === '"') {
+        inQuotes = false
+      } else {
+        currentCell += char
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true
+      } else if (char === ',') {
+        currentRow.push(currentCell)
+        currentCell = ''
+      } else if (char === '\n') {
+        currentRow.push(currentCell)
+        rows.push(currentRow)
+        currentRow = []
+        currentCell = ''
+      } else if (char !== '\r') {
+        currentCell += char
+      }
+    }
+  }
+  if (currentRow.length > 0 || currentCell !== '') {
+    currentRow.push(currentCell)
+    rows.push(currentRow)
+  }
+
+  const headers = rows[0].map(h => h.trim())
+  return rows.slice(1)
+    .filter(r => r.some(c => c.trim() !== ''))
+    .map(row => {
+      const obj: Record<string, string> = {}
+      headers.forEach((h, i) => { obj[h] = (row[i] ?? '').trim() })
+      return obj
     })
-    return row
-  })
 }
 
 function coerce(key: string, value: string): unknown {
-  if (value === '' || value === undefined) return null
-  if (['dipendenti', 'touchpoints', 'numero_messaggi'].includes(key)) return parseInt(value, 10) || null
-  if (key === 'valore') return parseFloat(value.replace(',', '.')) || null
-  if (['hanno_sito', 'esperienza_us', 'risposto_ultima_mail'].includes(key)) {
-    return value.toLowerCase() === 'sì' || value.toLowerCase() === 'yes' || value === '1' || value.toLowerCase() === 'true'
+  if (!value || value === 'Invalid DateTime' || value === '#VALUE!' || value === '-') return null
+
+  if (key === 'numero_messaggi') {
+    const n = parseInt(value, 10)
+    return isNaN(n) ? 0 : n
   }
+
+  if (key === 'dipendenti') {
+    const n = parseInt(value, 10)
+    return isNaN(n) ? null : n
+  }
+
+  if (key === 'valore') {
+    // Handle Italian format: "57.000,00 €" → 57000.00
+    const cleaned = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+    const n = parseFloat(cleaned)
+    return isNaN(n) || n === 0 ? null : n
+  }
+
+  if (['hanno_sito', 'esperienza_us', 'risposto_ultima_mail'].includes(key)) {
+    const v = value.toLowerCase()
+    if (v === 'sì' || v === 'si' || v === 'yes' || v === '1' || v === 'true') return true
+    if (v === 'no' || v === 'false' || v === '0') return false
+    return null
+  }
+
+  if (['data_apertura', 'data_ultimo_contatto', 'ricontattare'].includes(key)) {
+    // DD/MM/YYYY → YYYY-MM-DD
+    const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    if (match) return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`
+    return null
+  }
+
+  if (key === 'appuntamento') {
+    // DD/MM/YYYY [HH:MM] → YYYY-MM-DD or YYYY-MM-DDTHH:MM
+    const dateTime = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{2}:\d{2})$/)
+    if (dateTime) return `${dateTime[3]}-${dateTime[2].padStart(2, '0')}-${dateTime[1].padStart(2, '0')}T${dateTime[4]}`
+    const date = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    if (date) return `${date[3]}-${date[2].padStart(2, '0')}-${date[1].padStart(2, '0')}`
+    return null
+  }
+
   return value
 }
 
@@ -87,6 +156,10 @@ async function main() {
       }
     }
 
+    // Enforce NOT NULL defaults
+    if (payload.numero_messaggi == null) payload.numero_messaggi = 0
+    if (payload.risposto_ultima_mail == null) payload.risposto_ultima_mail = false
+
     if (!payload.email) {
       console.log(`SKIP (no email): ${payload.nome} ${payload.cognome} — ${payload.azienda}`)
       skipped++
@@ -101,6 +174,7 @@ async function main() {
       console.error(`ERROR: ${payload.email} — ${error.message}`)
       skipped++
     } else {
+      console.log(`OK: ${payload.email}`)
       inserted++
     }
   }
