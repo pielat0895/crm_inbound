@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import type { LeadWithComputed } from '@/types'
-import { DEFAULT_PIPELINE_STAGES } from '@/types'
+import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS } from '@/types'
 
 type Props = {
   lead?: LeadWithComputed
@@ -33,8 +33,8 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
     dipendenti: lead?.dipendenti?.toString() ?? '',
     hanno_sito: lead?.hanno_sito != null ? String(lead.hanno_sito) : '',
     company_web: lead?.company_web ?? '',
-    esperienza_us: lead?.esperienza_us != null ? String(lead.esperienza_us) : '',
-    stadio_pipeline: lead?.stadio_pipeline ?? 'Nuovo',
+    esperienza_us: lead?.esperienza_us ?? '',
+    stadio_pipeline: lead?.stadio_pipeline ?? 'Lead In',
     stato_lead: lead?.stato_lead ?? '',
     stato: lead?.stato ?? '',
     motivo_lost: lead?.motivo_lost ?? '',
@@ -72,9 +72,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
     else if (body.hanno_sito === 'false') body.hanno_sito = false
     else delete body.hanno_sito
 
-    if (body.esperienza_us === 'true') body.esperienza_us = true
-    else if (body.esperienza_us === 'false') body.esperienza_us = false
-    else delete body.esperienza_us
+    if (!body.esperienza_us) delete body.esperienza_us
 
     // Empty strings → null
     for (const key of Object.keys(body)) {
@@ -155,8 +153,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
             <Select value={form.esperienza_us ?? ''} onValueChange={v => set('esperienza_us', v ?? '')}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="true">Sì</SelectItem>
-                <SelectItem value="false">No</SelectItem>
+                {ESPERIENZA_US_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -172,7 +169,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>Stadio</Label>
-            <Select value={form.stadio_pipeline ?? 'Nuovo'} onValueChange={v => set('stadio_pipeline', v ?? 'Nuovo')}>
+            <Select value={form.stadio_pipeline ?? 'Lead In'} onValueChange={v => set('stadio_pipeline', v ?? 'Lead In')}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {stages.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}

@@ -10,7 +10,7 @@ export async function getSettings(): Promise<Settings> {
 
   return {
     followup_threshold_days: parseInt(map['followup_threshold_days'] ?? '7', 10),
-    pipeline_stages: JSON.parse(map['pipeline_stages'] ?? '["Nuovo","Contattato","In trattativa","Proposta inviata","Vinto","Perso"]'),
+    pipeline_stages: JSON.parse(map['pipeline_stages'] ?? '["Lead In","Discovery","Proposal Sent","Chiuso (Vinto)","Chiuso (Perso)","Cliente","Studente"]'),
   }
 }
 

@@ -14,7 +14,7 @@ export type Lead = {
   dipendenti: number | null
   hanno_sito: boolean | null
   company_web: string | null
-  esperienza_us: boolean | null
+  esperienza_us: string | null
   stadio_pipeline: string  // kept as string: stages are user-configurable via settings table
   stato_lead: string | null
   stato: string | null
@@ -50,15 +50,28 @@ export type Settings = {
 }
 
 export const DEFAULT_PIPELINE_STAGES = [
-  'Nuovo',
-  'Contattato',
-  'In trattativa',
-  'Proposta inviata',
-  'Vinto',
-  'Perso',
+  'Lead In',
+  'Discovery',
+  'Proposal Sent',
+  'Chiuso (Vinto)',
+  'Chiuso (Perso)',
+  'Cliente',
+  'Studente',
 ]
 
-export const CLOSED_STAGES = ['Vinto', 'Perso']
+export const CLOSED_STAGES = ['Chiuso (Vinto)', 'Chiuso (Perso)']
+
+export const ESPERIENZA_US_OPTIONS = [
+  'Web (sito)',
+  'Lead Gen',
+  'Passaparola',
+  'Già Cliente',
+  'Social / Eventi',
+  'Linkedin - Monitora',
+  'Linkedin - Ugeo Batch 2',
+  'Telefono ufficio',
+  'Studente/Università',
+]
 
 function parseLocalDate(dateStr: string): Date {
   const [year, month, day] = dateStr.split('T')[0].split('-').map(Number)
