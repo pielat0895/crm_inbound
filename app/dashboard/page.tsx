@@ -12,7 +12,7 @@ export default async function DashboardPage() {
     getSettings(),
   ])
 
-  const allLeads = (leads ?? []).map(computeLeadFields)
+  const allLeads = (leads ?? []).map(l => computeLeadFields(l))
   const openLeads = allLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
   const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Vinto')
   const conversionRate = allLeads.length > 0
