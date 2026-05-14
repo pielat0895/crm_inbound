@@ -15,7 +15,7 @@ export type Lead = {
   hanno_sito: boolean | null
   company_web: string | null
   esperienza_us: boolean | null
-  stadio_pipeline: string
+  stadio_pipeline: string  // kept as string: stages are user-configurable via settings table
   stato_lead: string | null
   stato: string | null
   motivo_lost: string | null
@@ -60,16 +60,19 @@ export const DEFAULT_PIPELINE_STAGES = [
 
 export const CLOSED_STAGES = ['Vinto', 'Perso']
 
-export function computeLeadFields(lead: Lead): LeadWithComputed {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number)
+  const d = new Date(year, month - 1, day)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
 
-  const parseLocalDate = (dateStr: string): Date => {
-    const [year, month, day] = dateStr.split('T')[0].split('-').map(Number)
-    const d = new Date(year, month - 1, day)
-    d.setHours(0, 0, 0, 0)
-    return d
-  }
+export function computeLeadFields(
+  lead: Lead,
+  referenceDate: Date = new Date()
+): LeadWithComputed {
+  const today = new Date(referenceDate)
+  today.setHours(0, 0, 0, 0)
 
   const giorni_ultimo_contatto = lead.data_ultimo_contatto
     ? Math.floor((today.getTime() - parseLocalDate(lead.data_ultimo_contatto).getTime()) / 86400000)

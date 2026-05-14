@@ -13,24 +13,29 @@ const baseLead: Lead = {
   numero_messaggi: 0, risposto_ultima_mail: false, touchpoints: 0, note: null,
 }
 
+const REF_DATE = new Date(2026, 4, 14) // May 14 2026, local midnight
+
 describe('computeLeadFields', () => {
   it('returns null when data_ultimo_contatto is null', () => {
-    const result = computeLeadFields(baseLead)
+    const result = computeLeadFields(baseLead, REF_DATE)
     expect(result.giorni_ultimo_contatto).toBeNull()
   })
 
-  it('computes giorni_ultimo_contatto correctly', () => {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const lead = { ...baseLead, data_ultimo_contatto: yesterday.toISOString().split('T')[0] }
-    const result = computeLeadFields(lead)
+  it('computes giorni_ultimo_contatto correctly for yesterday', () => {
+    const lead = { ...baseLead, data_ultimo_contatto: '2026-05-13' }
+    const result = computeLeadFields(lead, REF_DATE)
     expect(result.giorni_ultimo_contatto).toBe(1)
   })
 
   it('returns 0 when data_ultimo_contatto is today', () => {
-    const today = new Date().toISOString().split('T')[0]
-    const lead = { ...baseLead, data_ultimo_contatto: today }
-    const result = computeLeadFields(lead)
+    const lead = { ...baseLead, data_ultimo_contatto: '2026-05-14' }
+    const result = computeLeadFields(lead, REF_DATE)
     expect(result.giorni_ultimo_contatto).toBe(0)
+  })
+
+  it('computes giorni_aperto correctly', () => {
+    const lead = { ...baseLead, data_apertura: '2026-05-07' }
+    const result = computeLeadFields(lead, REF_DATE)
+    expect(result.giorni_aperto).toBe(7)
   })
 })
