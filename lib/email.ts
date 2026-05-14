@@ -2,10 +2,14 @@
 import { Resend } from 'resend'
 import type { LeadWithComputed } from '@/types'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function sendOverdueDigest(leads: LeadWithComputed[]) {
   if (leads.length === 0) return
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[sendOverdueDigest] RESEND_API_KEY not configured, skipping')
+    return
+  }
+  const { Resend } = await import('resend')
+  const resend = new Resend(process.env.RESEND_API_KEY)
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
   const rows = leads
