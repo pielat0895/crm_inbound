@@ -20,7 +20,7 @@ export async function sendOverdueDigest(leads: LeadWithComputed[]) {
 
   try {
     await resend.emails.send({
-      from: 'CRM <noreply@urbistat.com>',
+      from: 'CRM <onboarding@resend.dev>',
       to: process.env.RESEND_TO_EMAIL!,
       subject: `CRM — ${leads.length} lead da ricontattare`,
       html: `
