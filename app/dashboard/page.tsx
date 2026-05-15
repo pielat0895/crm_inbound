@@ -5,7 +5,7 @@ import { getSettings } from '@/lib/settings'
 import { StatsCard } from '@/components/ui/StatsCard'
 import { computeLeadFields, CLOSED_STAGES } from '@/types'
 import Link from 'next/link'
-import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy } from 'lucide-react'
+import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target } from 'lucide-react'
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
@@ -66,6 +66,7 @@ export default async function DashboardPage({
     : 0
 
   const totalRevenue = wonLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
+  const pipelineValue = openLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
 
   const overdue = openLeads.filter(
     l => l.giorni_ultimo_contatto !== null && l.giorni_ultimo_contatto >= settings.followup_threshold_days
@@ -128,10 +129,11 @@ export default async function DashboardPage({
         </Suspense>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} icon={Users} color="blue" />
         <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti su ${allLeads.length}`} icon={TrendingUp} color="green" />
         <StatsCard title="Fatturato vinti" value={`€${totalRevenue.toLocaleString('it-IT')}`} subtitle={`${wonLeads.length} deal chiusi`} icon={Euro} color="green" />
+        <StatsCard title="Pipeline aperta" value={`€${pipelineValue.toLocaleString('it-IT')}`} subtitle={`${openLeads.filter(l => l.valore).length} deal con valore`} icon={Target} color="blue" />
         <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} icon={Clock} color="amber" />
         <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} icon={AlertCircle} color="red" />
       </div>
