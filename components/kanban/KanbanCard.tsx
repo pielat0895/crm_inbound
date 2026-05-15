@@ -5,6 +5,18 @@ import { OverdueBadge } from '@/components/ui/OverdueBadge'
 import type { LeadWithComputed } from '@/types'
 import { useRouter } from 'next/navigation'
 
+const ORIGINE_COLORS: Record<string, string> = {
+  'Info':                 'bg-blue-100 text-blue-700',
+  'LeadChampion':         'bg-violet-100 text-violet-700',
+  'Sito (Lead Champion)': 'bg-indigo-100 text-indigo-700',
+  'Lead Generation':      'bg-cyan-100 text-cyan-700',
+  'Landing Page':         'bg-sky-100 text-sky-700',
+  'Support':              'bg-gray-100 text-gray-600',
+  'Promo Real Estate':    'bg-orange-100 text-orange-700',
+  'Clienti':              'bg-green-100 text-green-700',
+  'Eventi':               'bg-pink-100 text-pink-700',
+}
+
 type Props = {
   lead: LeadWithComputed
   threshold: number
@@ -23,6 +35,10 @@ export function KanbanCard({ lead, threshold }: Props) {
     opacity: isDragging ? 0.5 : 1,
   }
 
+  const origineClass = lead.origine
+    ? (ORIGINE_COLORS[lead.origine] ?? 'bg-muted text-muted-foreground')
+    : ''
+
   return (
     <div
       ref={setNodeRef}
@@ -30,7 +46,7 @@ export function KanbanCard({ lead, threshold }: Props) {
       {...attributes}
       {...listeners}
       onClick={() => router.push(`/leads/${lead.id}`)}
-      className="rounded-md border bg-card p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow space-y-1"
+      className="rounded-md border bg-card p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow space-y-1.5"
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-sm leading-tight">
@@ -38,14 +54,23 @@ export function KanbanCard({ lead, threshold }: Props) {
         </p>
         <OverdueBadge giorni={lead.giorni_ultimo_contatto} threshold={threshold} />
       </div>
-      {lead.azienda && <p className="text-xs text-muted-foreground">{lead.azienda}</p>}
-      <div className="flex gap-2 flex-wrap">
+      {lead.azienda && (
+        <p className="text-xs text-muted-foreground">{lead.azienda}</p>
+      )}
+      <div className="flex gap-1.5 flex-wrap items-center">
         {lead.origine && (
-          <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{lead.origine}</span>
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${origineClass}`}>
+            {lead.origine}
+          </span>
         )}
-        {lead.data_ultimo_contatto && (
-          <span className="text-xs text-muted-foreground">
-            {new Date(lead.data_ultimo_contatto).toLocaleDateString('it-IT')}
+        {lead.valore != null && (
+          <span className="text-xs text-green-700 font-medium">
+            €{lead.valore.toLocaleString('it-IT')}
+          </span>
+        )}
+        {lead.giorni_aperto !== null && (
+          <span className="text-xs text-muted-foreground ml-auto">
+            {lead.giorni_aperto}gg
           </span>
         )}
       </div>
