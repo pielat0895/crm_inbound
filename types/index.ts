@@ -43,7 +43,7 @@ export type Interaction = {
   id: string
   lead_id: string
   created_at: string
-  tipo: 'nota' | 'email' | 'chiamata' | 'meeting'
+  tipo: 'nota' | 'email' | 'chiamata' | 'meeting' | 'ai_analisi'
   contenuto: string
 }
 
