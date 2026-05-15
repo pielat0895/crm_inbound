@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import type { LeadWithComputed } from '@/types'
-import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS } from '@/types'
+import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUSTRY_OPTIONS, STATO_LEAD_OPTIONS } from '@/types'
 
 type Props = {
   lead?: LeadWithComputed
@@ -138,8 +138,24 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
         <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Qualificazione</h2>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Tipo" name="tipo" />
-          <Field label="Origine" name="origine" />
-          <Field label="Industry" name="industry" />
+          <div className="space-y-1">
+            <Label>Origine</Label>
+            <Select value={form.origine ?? ''} onValueChange={v => set('origine', v ?? '')}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                {ORIGINE_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Industry</Label>
+            <Select value={form.industry ?? ''} onValueChange={v => set('industry', v ?? '')}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                {INDUSTRY_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <Field label="Dipendenti" name="dipendenti" type="number" />
           <Field label="Sito web aziendale" name="company_web" />
           <div className="space-y-1">
@@ -180,7 +196,15 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
               </SelectContent>
             </Select>
           </div>
-          <Field label="Stato lead" name="stato_lead" />
+          <div className="space-y-1">
+            <Label>Stato lead</Label>
+            <Select value={form.stato_lead ?? ''} onValueChange={v => set('stato_lead', v ?? '')}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                {STATO_LEAD_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <Field label="Stato" name="stato" />
           <Field label="Motivo lost" name="motivo_lost" />
           <Field label="Valore (€)" name="valore" type="number" />

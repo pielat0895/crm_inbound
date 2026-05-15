@@ -64,6 +64,32 @@ export const DEFAULT_PIPELINE_STAGES = [
 
 export const CLOSED_STAGES = ['Chiuso (Vinto)', 'Chiuso (Perso)']
 
+export const ORIGINE_OPTIONS = [
+  'Info',
+  'LeadChampion',
+  'Sito (Lead Champion)',
+  'Lead Generation',
+  'Landing Page',
+  'Support',
+  'Promo Real Estate',
+  'Clienti',
+  'Eventi',
+]
+
+export const INDUSTRY_OPTIONS = [
+  'Retail, Consumer Goods, Fashion',
+  'Manufacturing & Industrial',
+  'Health, Beauty & Wellness',
+  'Business & Professional Services',
+  'Marketing, Media & Communication',
+  'Education & Institutional',
+  'Restaurants & Food',
+  'Real Estate',
+  'Studente',
+]
+
+export const STATO_LEAD_OPTIONS = ['Attivo', 'In Attesa', 'Chiuso']
+
 export const ESPERIENZA_US_OPTIONS = [
   'Web (sito)',
   'Lead Gen',
