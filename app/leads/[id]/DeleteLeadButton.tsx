@@ -37,7 +37,7 @@ export function DeleteLeadButton({ leadId, leadName }: { leadId: string; leadNam
   }
 
   return (
-    <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirm(true)}>
+    <Button size="sm" variant="destructive" onClick={() => setConfirm(true)}>
       <Trash2 className="h-4 w-4 mr-1.5" />
       Elimina lead
     </Button>
