@@ -6,6 +6,7 @@ import { StatsCard } from '@/components/ui/StatsCard'
 import { computeLeadFields, CLOSED_STAGES } from '@/types'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { Users, TrendingUp, Clock, AlertCircle } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = createServiceClient()
@@ -65,10 +66,10 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-bold">Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} />
-        <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti su ${allLeads.length}`} />
-        <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} />
-        <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} />
+        <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} icon={Users} color="blue" />
+        <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti su ${allLeads.length}`} icon={TrendingUp} color="green" />
+        <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} icon={Clock} color="amber" />
+        <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} icon={AlertCircle} color="red" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

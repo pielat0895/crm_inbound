@@ -13,6 +13,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 import { ArrowUpDown, Download, Plus, X } from 'lucide-react'
 
+const STAGE_COLORS: Record<string, string> = {
+  'Lead In':        'bg-blue-100 text-blue-700',
+  'Discovery':      'bg-violet-100 text-violet-700',
+  'Proposal Sent':  'bg-amber-100 text-amber-700',
+  'Chiuso (Vinto)': 'bg-green-100 text-green-700',
+  'Chiuso (Perso)': 'bg-red-100 text-red-700',
+  'Cliente':        'bg-emerald-100 text-emerald-700',
+  'Studente':       'bg-gray-100 text-gray-600',
+}
+
+function StageBadge({ stage }: { stage: string }) {
+  const cls = STAGE_COLORS[stage] ?? 'bg-gray-100 text-gray-600'
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>{stage}</span>
+}
+
 type Props = {
   leads: LeadWithComputed[]
   threshold: number
@@ -66,7 +81,7 @@ export function LeadTable({ leads, threshold, stages = [] }: Props) {
     },
     { accessorKey: 'azienda', header: 'Azienda', cell: ({ getValue }) => (getValue() as string | null) ?? '—' },
     { accessorKey: 'origine', header: 'Origine', cell: ({ getValue }) => (getValue() as string | null) ?? '—' },
-    { accessorKey: 'stadio_pipeline', header: 'Stadio' },
+    { accessorKey: 'stadio_pipeline', header: 'Stadio', cell: ({ getValue }) => <StageBadge stage={getValue() as string} /> },
     {
       accessorKey: 'data_ultimo_contatto',
       header: 'Ultimo contatto',
