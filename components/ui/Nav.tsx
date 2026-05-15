@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Kanban, Users, Settings, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SearchModal } from './SearchModal'
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -20,6 +21,10 @@ export function Nav() {
           <Zap className="h-4 w-4 text-primary-foreground" />
         </div>
         <span className="font-semibold text-sm tracking-tight">CRM Inbound</span>
+      </div>
+
+      <div className="px-3 py-3 border-b">
+        <SearchModal />
       </div>
 
       <div className="flex-1 px-3 py-4 space-y-0.5">
