@@ -17,7 +17,7 @@ export function DateFilter() {
   const pathname = usePathname()
   const params = useSearchParams()
 
-  const current = params.get('range') ?? 'all'
+  const current = params.get('range') ?? '30'
   const from = params.get('from') ?? ''
   const to = params.get('to') ?? ''
 

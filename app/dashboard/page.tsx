@@ -5,8 +5,7 @@ import { getSettings } from '@/lib/settings'
 import { StatsCard } from '@/components/ui/StatsCard'
 import { computeLeadFields, CLOSED_STAGES } from '@/types'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import { Users, TrendingUp, Clock, AlertCircle, Euro } from 'lucide-react'
+import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy } from 'lucide-react'
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
@@ -20,8 +19,8 @@ function getDateRange(range: string | null, from: string | null, to: string | nu
       end: to ? new Date(to + 'T23:59:59') : null,
     }
   }
-  if (!range || range === 'all') return { start: null, end: null }
-  const days = parseInt(range, 10)
+  const days = parseInt(range ?? '30', 10)
+  if (isNaN(days)) return { start: null, end: null }
   const end = new Date()
   const start = new Date()
   start.setDate(start.getDate() - days)
@@ -34,7 +33,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ range?: string; from?: string; to?: string }>
 }) {
   const sp = await searchParams
-  const { start, end } = getDateRange(sp.range ?? 'all', sp.from ?? null, sp.to ?? null)
+  const { start, end } = getDateRange(sp.range ?? null, sp.from ?? null, sp.to ?? null)
 
   const supabase = createServiceClient()
   const [{ data: leads }, settings] = await Promise.all([
@@ -44,17 +43,19 @@ export default async function DashboardPage({
 
   const allLeadsRaw = (leads ?? []).map(l => computeLeadFields(l))
 
-  const allLeads = allLeadsRaw.filter(l => {
+  const filterByDate = (l: (typeof allLeadsRaw)[0], dateField: string | null) => {
     if (!start && !end) return true
-    if (!l.data_apertura) return false
-    const d = new Date(l.data_apertura)
+    if (!dateField) return false
+    const d = new Date(dateField)
     if (start && d < start) return false
     if (end && d > end) return false
     return true
-  })
+  }
 
+  const allLeads = allLeadsRaw.filter(l => filterByDate(l, l.data_apertura))
   const openLeads = allLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
   const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Chiuso (Vinto)')
+
   const conversionRate = allLeads.length > 0
     ? Math.round((wonLeads.length / allLeads.length) * 100)
     : 0
@@ -89,19 +90,19 @@ export default async function DashboardPage({
     return { origine, totale, vinti, tasso: Math.round((vinti / totale) * 100) }
   }).sort((a, b) => b.tasso - a.tasso)
 
+  // Trend uses filtered leads
   const trendMensile: Record<string, number> = {}
-  for (const lead of allLeadsRaw) {
+  for (const lead of allLeads) {
     if (lead.data_apertura) {
       const month = lead.data_apertura.slice(0, 7)
       trendMensile[month] = (trendMensile[month] ?? 0) + 1
     }
   }
   const trendMensileRows = Object.entries(trendMensile).sort(([a], [b]) => a.localeCompare(b))
-
   const counts = trendMensileRows.map(([, count]) => count)
   const trendChartData = trendMensileRows.map(([month, count], i) => {
-    const window = counts.slice(Math.max(0, i - 2), i + 1)
-    const media = Math.round(window.reduce((a, b) => a + b, 0) / window.length)
+    const w = counts.slice(Math.max(0, i - 2), i + 1)
+    const media = Math.round(w.reduce((a, b) => a + b, 0) / w.length)
     const [year, m] = month.split('-')
     const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
     return { label, count, media }
@@ -113,6 +114,10 @@ export default async function DashboardPage({
     tassoNonVinti: Math.round(((totale - vinti) / totale) * 100),
     tasso: Math.round((vinti / totale) * 100),
   }))
+
+  const wonDealsSorted = wonLeads
+    .filter(l => l.data_chiusura)
+    .sort((a, b) => (b.data_chiusura ?? '').localeCompare(a.data_chiusura ?? ''))
 
   return (
     <div className="space-y-6">
@@ -141,18 +146,56 @@ export default async function DashboardPage({
           <h2 className="font-semibold mb-4">Pipeline per stadio</h2>
           <PipelineChart data={leadsByStage} />
         </div>
-
         <div className="rounded-lg border p-4">
           <h2 className="font-semibold mb-4">Conversione per origine</h2>
           <ConversionChart data={conversionChartData} />
         </div>
       </div>
 
+      {wonDealsSorted.length > 0 && (
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="h-4 w-4 text-green-600" />
+            <h2 className="font-semibold">Deal chiusi vinti ({wonDealsSorted.length})</h2>
+          </div>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="pb-2 font-medium text-muted-foreground">Cliente</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Azienda</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Origine</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">Valore</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">Chiuso il</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wonDealsSorted.map(lead => (
+                  <tr key={lead.id} className="border-b last:border-0">
+                    <td className="py-2">
+                      <Link href={`/leads/${lead.id}`} className="hover:underline font-medium">
+                        {lead.nome} {lead.cognome}
+                      </Link>
+                    </td>
+                    <td className="py-2 text-muted-foreground">{lead.azienda ?? '—'}</td>
+                    <td className="py-2 text-muted-foreground">{lead.origine ?? '—'}</td>
+                    <td className="py-2 text-right font-medium text-green-700">
+                      {lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}
+                    </td>
+                    <td className="py-2 text-right text-muted-foreground">
+                      {lead.data_chiusura ? new Date(lead.data_chiusura).toLocaleDateString('it-IT') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {overdue.length > 0 && (
         <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-          <h2 className="font-semibold text-orange-800 mb-3">
-            Da ricontattare ({overdue.length})
-          </h2>
+          <h2 className="font-semibold text-orange-800 mb-3">Da ricontattare ({overdue.length})</h2>
           <div className="space-y-1">
             {overdue.slice(0, 10).map(lead => (
               <Link key={lead.id} href={`/leads/${lead.id}`} className="flex justify-between text-sm hover:underline">
