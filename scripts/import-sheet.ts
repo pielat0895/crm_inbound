@@ -39,6 +39,8 @@ const COLUMN_MAP: Record<string, string> = {
   'Numero messaggi': 'numero_messaggi',
   'Risposto Ultima Mail': 'risposto_ultima_mail',
   'Data Ultimo Contatto': 'data_ultimo_contatto',
+  'Data di Chiusura': 'data_chiusura',
+  'Contattato': 'contattato',
 }
 
 function parseCSV(content: string): Record<string, string>[] {
@@ -111,14 +113,14 @@ function coerce(key: string, value: string): unknown {
     return isNaN(n) || n === 0 ? null : n
   }
 
-  if (['hanno_sito', 'esperienza_us', 'risposto_ultima_mail'].includes(key)) {
+  if (['hanno_sito', 'risposto_ultima_mail', 'contattato'].includes(key)) {
     const v = value.toLowerCase()
     if (v === 'sì' || v === 'si' || v === 'yes' || v === '1' || v === 'true') return true
     if (v === 'no' || v === 'false' || v === '0') return false
     return null
   }
 
-  if (['data_apertura', 'data_ultimo_contatto', 'ricontattare'].includes(key)) {
+  if (['data_apertura', 'data_ultimo_contatto', 'ricontattare', 'data_chiusura'].includes(key)) {
     // DD/MM/YYYY → YYYY-MM-DD
     const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
     if (match) return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`
@@ -159,6 +161,7 @@ async function main() {
     // Enforce NOT NULL defaults
     if (payload.numero_messaggi == null) payload.numero_messaggi = 0
     if (payload.risposto_ultima_mail == null) payload.risposto_ultima_mail = false
+    if (payload.contattato == null) payload.contattato = false
 
     if (!payload.email) {
       console.log(`SKIP (no email): ${payload.nome} ${payload.cognome} — ${payload.azienda}`)

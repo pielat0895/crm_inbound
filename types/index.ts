@@ -25,6 +25,8 @@ export type Lead = {
   appuntamento: string | null
   ricontattare: string | null
   data_ultimo_contatto: string | null
+  data_chiusura: string | null
+  contattato: boolean
   numero_messaggi: number
   risposto_ultima_mail: boolean
   touchpoints: number
@@ -34,6 +36,7 @@ export type Lead = {
 export type LeadWithComputed = Lead & {
   giorni_ultimo_contatto: number | null
   giorni_aperto: number | null
+  giorni_pipeline: number | null
 }
 
 export type Interaction = {
@@ -95,5 +98,9 @@ export function computeLeadFields(
     ? Math.floor((today.getTime() - parseLocalDate(lead.data_apertura).getTime()) / 86400000)
     : null
 
-  return { ...lead, giorni_ultimo_contatto, giorni_aperto }
+  const giorni_pipeline = lead.data_apertura && lead.data_chiusura
+    ? Math.floor((parseLocalDate(lead.data_chiusura).getTime() - parseLocalDate(lead.data_apertura).getTime()) / 86400000)
+    : null
+
+  return { ...lead, giorni_ultimo_contatto, giorni_aperto, giorni_pipeline }
 }

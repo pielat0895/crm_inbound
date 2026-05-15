@@ -44,6 +44,8 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
     appuntamento: lead?.appuntamento ? lead.appuntamento.slice(0, 16) : '',
     ricontattare: lead?.ricontattare ?? '',
     numero_messaggi: lead?.numero_messaggi?.toString() ?? '0',
+    data_chiusura: lead?.data_chiusura ?? '',
+    contattato: lead?.contattato ? 'true' : 'false',
     note: lead?.note ?? '',
   })
   const [loading, setLoading] = useState(false)
@@ -73,6 +75,8 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
     else delete body.hanno_sito
 
     if (!body.esperienza_us) delete body.esperienza_us
+
+    body.contattato = body.contattato === 'true'
 
     // Empty strings → null
     for (const key of Object.keys(body)) {
@@ -188,8 +192,19 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
         <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Tempi</h2>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Data apertura" name="data_apertura" type="date" />
+          <Field label="Data chiusura" name="data_chiusura" type="date" />
           <Field label="Appuntamento" name="appuntamento" type="datetime-local" />
           <Field label="Ricontattare" name="ricontattare" type="date" />
+          <div className="space-y-1">
+            <Label>Contattato</Label>
+            <Select value={form.contattato} onValueChange={v => set('contattato', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Sì</SelectItem>
+                <SelectItem value="false">No</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </section>
 
