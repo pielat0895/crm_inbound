@@ -197,7 +197,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
           <Field label="Ricontattare" name="ricontattare" type="date" />
           <div className="space-y-1">
             <Label>Contattato</Label>
-            <Select value={form.contattato} onValueChange={v => set('contattato', v)}>
+            <Select value={form.contattato} onValueChange={v => set('contattato', v ?? 'false')}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="true">Sì</SelectItem>

@@ -17,7 +17,7 @@ export default async function LeadsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Lead</h1>
-      <LeadTable leads={computed} threshold={settings.followup_threshold_days} />
+      <LeadTable leads={computed} threshold={settings.followup_threshold_days} stages={settings.pipeline_stages} />
     </div>
   )
 }

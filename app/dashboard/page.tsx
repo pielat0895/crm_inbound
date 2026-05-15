@@ -33,15 +33,32 @@ export default async function DashboardPage() {
   const today = new Date().toISOString().split('T')[0]
   const todayFollowups = openLeads.filter(l => l.ricontattare === today)
 
-  const leadsByStage = settings.pipeline_stages.map(stage => ({
-    stage,
-    count: allLeads.filter(l => l.stadio_pipeline === stage).length,
-  }))
+  const leadsByStage = settings.pipeline_stages.map(stage => {
+    const stageLeads = allLeads.filter(l => l.stadio_pipeline === stage)
+    const revenue = stageLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
+    return { stage, count: stageLeads.length, revenue }
+  })
 
   const leadsByOrigine: Record<string, number> = {}
   for (const lead of allLeads) {
     if (lead.origine) leadsByOrigine[lead.origine] = (leadsByOrigine[lead.origine] ?? 0) + 1
   }
+
+  const conversionePerOrigine = Object.entries(leadsByOrigine).map(([origine, totale]) => {
+    const vinti = wonLeads.filter(l => l.origine === origine).length
+    return { origine, totale, vinti, tasso: Math.round((vinti / totale) * 100) }
+  }).sort((a, b) => b.tasso - a.tasso)
+
+  const trendMensile: Record<string, number> = {}
+  for (const lead of allLeads) {
+    if (lead.data_apertura) {
+      const month = lead.data_apertura.slice(0, 7) // YYYY-MM
+      trendMensile[month] = (trendMensile[month] ?? 0) + 1
+    }
+  }
+  const trendMensileRows = Object.entries(trendMensile)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 12)
 
   return (
     <div className="space-y-6">
@@ -56,27 +73,51 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-3">Lead per stadio</h2>
+          <h2 className="font-semibold mb-3">Pipeline per stadio</h2>
           <div className="space-y-2">
-            {leadsByStage.map(({ stage, count }) => (
-              <div key={stage} className="flex justify-between text-sm">
+            {leadsByStage.map(({ stage, count, revenue }) => (
+              <div key={stage} className="flex justify-between text-sm items-center">
                 <span>{stage}</span>
-                <Badge variant="secondary">{count}</Badge>
+                <div className="flex gap-2 items-center">
+                  {revenue > 0 && (
+                    <span className="text-muted-foreground text-xs">€{revenue.toLocaleString('it-IT')}</span>
+                  )}
+                  <Badge variant="secondary">{count}</Badge>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
         <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-3">Lead per origine</h2>
+          <h2 className="font-semibold mb-3">Conversione per origine</h2>
           <div className="space-y-2">
-            {Object.entries(leadsByOrigine).map(([origine, count]) => (
-              <div key={origine} className="flex justify-between text-sm">
+            {conversionePerOrigine.map(({ origine, totale, vinti, tasso }) => (
+              <div key={origine} className="flex justify-between text-sm items-center">
                 <span>{origine}</span>
-                <Badge variant="secondary">{count}</Badge>
+                <div className="flex gap-2 items-center">
+                  <span className="text-muted-foreground text-xs">{vinti}/{totale}</span>
+                  <Badge variant={tasso >= 20 ? 'default' : 'secondary'}>{tasso}%</Badge>
+                </div>
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-4">
+        <h2 className="font-semibold mb-3">Trend mensile lead</h2>
+        <div className="flex gap-3 flex-wrap">
+          {trendMensileRows.map(([month, count]) => {
+            const [year, m] = month.split('-')
+            const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
+            return (
+              <div key={month} className="text-center min-w-[48px]">
+                <div className="text-lg font-semibold">{count}</div>
+                <div className="text-xs text-muted-foreground">{label}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
