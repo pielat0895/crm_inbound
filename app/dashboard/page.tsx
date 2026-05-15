@@ -7,6 +7,9 @@ import { computeLeadFields, CLOSED_STAGES } from '@/types'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Users, TrendingUp, Clock, AlertCircle } from 'lucide-react'
+import { TrendChart } from '@/components/dashboard/TrendChart'
+import { PipelineChart } from '@/components/dashboard/PipelineChart'
+import { ConversionChart } from '@/components/dashboard/ConversionChart'
 
 export default async function DashboardPage() {
   const supabase = createServiceClient()
@@ -58,8 +61,23 @@ export default async function DashboardPage() {
     }
   }
   const trendMensileRows = Object.entries(trendMensile)
-    .sort(([a], [b]) => b.localeCompare(a))
-    .slice(0, 12)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-12)
+
+  let cumul = 0
+  const trendChartData = trendMensileRows.map(([month, count]) => {
+    cumul += count
+    const [year, m] = month.split('-')
+    const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
+    return { label, count, cumulativo: cumul }
+  })
+
+  const conversionChartData = conversionePerOrigine.map(({ origine, totale, vinti }) => ({
+    origine,
+    tassoVinti: Math.round((vinti / totale) * 100),
+    tassoNonVinti: Math.round(((totale - vinti) / totale) * 100),
+    tasso: Math.round((vinti / totale) * 100),
+  }))
 
   return (
     <div className="space-y-6">
@@ -72,53 +90,20 @@ export default async function DashboardPage() {
         <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} icon={AlertCircle} color="red" />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-3">Pipeline per stadio</h2>
-          <div className="space-y-2">
-            {leadsByStage.map(({ stage, count, revenue }) => (
-              <div key={stage} className="flex justify-between text-sm items-center">
-                <span>{stage}</span>
-                <div className="flex gap-2 items-center">
-                  {revenue > 0 && (
-                    <span className="text-muted-foreground text-xs">€{revenue.toLocaleString('it-IT')}</span>
-                  )}
-                  <Badge variant="secondary">{count}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-3">Conversione per origine</h2>
-          <div className="space-y-2">
-            {conversionePerOrigine.map(({ origine, totale, vinti, tasso }) => (
-              <div key={origine} className="flex justify-between text-sm items-center">
-                <span>{origine}</span>
-                <div className="flex gap-2 items-center">
-                  <span className="text-muted-foreground text-xs">{vinti}/{totale}</span>
-                  <Badge variant={tasso >= 20 ? 'default' : 'secondary'}>{tasso}%</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="rounded-lg border p-4">
+        <h2 className="font-semibold mb-4">Trend mensile lead</h2>
+        <TrendChart data={trendChartData} />
       </div>
 
-      <div className="rounded-lg border p-4">
-        <h2 className="font-semibold mb-3">Trend mensile lead</h2>
-        <div className="flex gap-3 flex-wrap">
-          {trendMensileRows.map(([month, count]) => {
-            const [year, m] = month.split('-')
-            const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
-            return (
-              <div key={month} className="text-center min-w-[48px]">
-                <div className="text-lg font-semibold">{count}</div>
-                <div className="text-xs text-muted-foreground">{label}</div>
-              </div>
-            )
-          })}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Pipeline per stadio</h2>
+          <PipelineChart data={leadsByStage} />
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Conversione per origine</h2>
+          <ConversionChart data={conversionChartData} />
         </div>
       </div>
 
