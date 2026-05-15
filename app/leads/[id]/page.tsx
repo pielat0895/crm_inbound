@@ -8,6 +8,7 @@ import { InteractionTimeline } from '@/components/leads/InteractionTimeline'
 import { Badge } from '@/components/ui/badge'
 import { notFound } from 'next/navigation'
 import { CalendarButton } from './CalendarButton'
+import { DeleteLeadButton } from './DeleteLeadButton'
 import { Mail, Phone, Building2, Euro, Clock } from 'lucide-react'
 
 const STAGE_COLORS: Record<string, string> = {
@@ -98,7 +99,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </div>
           </div>
 
-          {computed.ricontattare && <CalendarButton lead={computed} />}
+          <div className="flex items-center gap-2 shrink-0">
+            {computed.ricontattare && <CalendarButton lead={computed} />}
+            <DeleteLeadButton
+              leadId={computed.id}
+              leadName={`${computed.nome ?? ''} ${computed.cognome ?? ''}`.trim() || computed.email}
+            />
+          </div>
         </div>
       </div>
 
