@@ -98,12 +98,13 @@ export default async function DashboardPage({
   }
   const trendMensileRows = Object.entries(trendMensile).sort(([a], [b]) => a.localeCompare(b))
 
-  let cumul = 0
-  const trendChartData = trendMensileRows.map(([month, count]) => {
-    cumul += count
+  const counts = trendMensileRows.map(([, count]) => count)
+  const trendChartData = trendMensileRows.map(([month, count], i) => {
+    const window = counts.slice(Math.max(0, i - 2), i + 1)
+    const media = Math.round(window.reduce((a, b) => a + b, 0) / window.length)
     const [year, m] = month.split('-')
     const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
-    return { label, count, cumulativo: cumul }
+    return { label, count, media }
   })
 
   const conversionChartData = conversionePerOrigine.map(({ origine, totale, vinti }) => ({
