@@ -9,6 +9,8 @@ import { useDroppable } from '@dnd-kit/core'
 import { KanbanCard } from './KanbanCard'
 import type { LeadWithComputed } from '@/types'
 import { createClient } from '@/lib/supabase/client'
+import { Input } from '@/components/ui/input'
+import { Search } from 'lucide-react'
 
 type Props = {
   initialLeads: LeadWithComputed[]
@@ -35,6 +37,19 @@ function DroppableColumn({
 export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
   const [leads, setLeads] = useState<LeadWithComputed[]>(initialLeads)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  const visibleLeads = search.trim()
+    ? leads.filter(l => {
+        const q = search.toLowerCase()
+        return (
+          l.nome?.toLowerCase().includes(q) ||
+          l.cognome?.toLowerCase().includes(q) ||
+          l.azienda?.toLowerCase().includes(q) ||
+          l.email.toLowerCase().includes(q)
+        )
+      })
+    : leads
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -83,6 +98,16 @@ export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
   const activeLead = leads.find(l => l.id === activeId) ?? null
 
   return (
+    <div className="space-y-4">
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Cerca nome, azienda, email..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -91,7 +116,7 @@ export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
     >
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map(stage => {
-          const stageLeads = leads.filter(l => l.stadio_pipeline === stage)
+          const stageLeads = visibleLeads.filter(l => l.stadio_pipeline === stage)
           return (
             <div key={stage} className="flex-shrink-0 w-64">
               <div className="flex items-center justify-between mb-2">
@@ -114,5 +139,6 @@ export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
         {activeLead && <KanbanCard lead={activeLead} threshold={threshold} />}
       </DragOverlay>
     </DndContext>
+    </div>
   )
 }

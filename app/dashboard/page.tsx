@@ -6,19 +6,53 @@ import { StatsCard } from '@/components/ui/StatsCard'
 import { computeLeadFields, CLOSED_STAGES } from '@/types'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import { Users, TrendingUp, Clock, AlertCircle } from 'lucide-react'
+import { Users, TrendingUp, Clock, AlertCircle, Euro } from 'lucide-react'
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
+import { DateFilter } from '@/components/dashboard/DateFilter'
+import { Suspense } from 'react'
 
-export default async function DashboardPage() {
+function getDateRange(range: string | null, from: string | null, to: string | null): { start: Date | null; end: Date | null } {
+  if (from || to) {
+    return {
+      start: from ? new Date(from) : null,
+      end: to ? new Date(to + 'T23:59:59') : null,
+    }
+  }
+  if (!range || range === 'all') return { start: null, end: null }
+  const days = parseInt(range, 10)
+  const end = new Date()
+  const start = new Date()
+  start.setDate(start.getDate() - days)
+  return { start, end }
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string; from?: string; to?: string }>
+}) {
+  const sp = await searchParams
+  const { start, end } = getDateRange(sp.range ?? 'all', sp.from ?? null, sp.to ?? null)
+
   const supabase = createServiceClient()
   const [{ data: leads }, settings] = await Promise.all([
     supabase.from('leads').select('*'),
     getSettings(),
   ])
 
-  const allLeads = (leads ?? []).map(l => computeLeadFields(l))
+  const allLeadsRaw = (leads ?? []).map(l => computeLeadFields(l))
+
+  const allLeads = allLeadsRaw.filter(l => {
+    if (!start && !end) return true
+    if (!l.data_apertura) return false
+    const d = new Date(l.data_apertura)
+    if (start && d < start) return false
+    if (end && d > end) return false
+    return true
+  })
+
   const openLeads = allLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
   const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Chiuso (Vinto)')
   const conversionRate = allLeads.length > 0
@@ -29,6 +63,8 @@ export default async function DashboardPage() {
   const avgDaysToClose = wonWithDays.length > 0
     ? Math.round(wonWithDays.reduce((sum, l) => sum + (l.giorni_pipeline ?? 0), 0) / wonWithDays.length)
     : 0
+
+  const totalRevenue = wonLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
 
   const overdue = openLeads.filter(
     l => l.giorni_ultimo_contatto !== null && l.giorni_ultimo_contatto >= settings.followup_threshold_days
@@ -54,15 +90,13 @@ export default async function DashboardPage() {
   }).sort((a, b) => b.tasso - a.tasso)
 
   const trendMensile: Record<string, number> = {}
-  for (const lead of allLeads) {
+  for (const lead of allLeadsRaw) {
     if (lead.data_apertura) {
-      const month = lead.data_apertura.slice(0, 7) // YYYY-MM
+      const month = lead.data_apertura.slice(0, 7)
       trendMensile[month] = (trendMensile[month] ?? 0) + 1
     }
   }
-  const trendMensileRows = Object.entries(trendMensile)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-12)
+  const trendMensileRows = Object.entries(trendMensile).sort(([a], [b]) => a.localeCompare(b))
 
   let cumul = 0
   const trendChartData = trendMensileRows.map(([month, count]) => {
@@ -81,11 +115,17 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <Suspense>
+          <DateFilter />
+        </Suspense>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} icon={Users} color="blue" />
         <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti su ${allLeads.length}`} icon={TrendingUp} color="green" />
+        <StatsCard title="Fatturato vinti" value={`€${totalRevenue.toLocaleString('it-IT')}`} subtitle={`${wonLeads.length} deal chiusi`} icon={Euro} color="green" />
         <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} icon={Clock} color="amber" />
         <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} icon={AlertCircle} color="red" />
       </div>
