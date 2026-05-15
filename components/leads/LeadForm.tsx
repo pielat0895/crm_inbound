@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -94,14 +95,21 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
 
     if (!res.ok) {
       const data = await res.json()
-      setError(data.error ?? 'Errore nel salvataggio')
+      const msg = data.error ?? 'Errore nel salvataggio'
+      setError(msg)
+      toast.error(msg)
       setLoading(false)
       return
     }
 
     const saved = await res.json()
-    router.push(`/leads/${saved.id}`)
-    router.refresh()
+    toast.success(isEdit ? 'Modifiche salvate' : 'Lead creato')
+    setLoading(false)
+    if (isEdit) {
+      router.refresh()
+    } else {
+      router.push(`/leads/${saved.id}`)
+    }
   }
 
   function Field({ label, name, type = 'text' }: { label: string; name: keyof typeof form; type?: string }) {
