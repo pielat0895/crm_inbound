@@ -120,6 +120,10 @@ export default async function DashboardPage({
     .filter(l => l.data_chiusura)
     .sort((a, b) => (b.data_chiusura ?? '').localeCompare(a.data_chiusura ?? ''))
 
+  const openDealsSorted = openLeads
+    .filter(l => l.valore)
+    .sort((a, b) => (b.valore ?? 0) - (a.valore ?? 0))
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -186,6 +190,50 @@ export default async function DashboardPage({
                     </td>
                     <td className="py-2 text-right text-muted-foreground">
                       {lead.data_chiusura ? new Date(lead.data_chiusura).toLocaleDateString('it-IT') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {openDealsSorted.length > 0 && (
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Target className="h-4 w-4 text-blue-600" />
+            <h2 className="font-semibold">Deal aperti con valore ({openDealsSorted.length})</h2>
+            <span className="ml-auto text-sm font-medium text-blue-700">€{pipelineValue.toLocaleString('it-IT')}</span>
+          </div>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="pb-2 font-medium text-muted-foreground">Cliente</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Azienda</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Stadio</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Origine</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">Valore</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">Aperto da</th>
+                </tr>
+              </thead>
+              <tbody>
+                {openDealsSorted.map(lead => (
+                  <tr key={lead.id} className="border-b last:border-0">
+                    <td className="py-2">
+                      <Link href={`/leads/${lead.id}`} className="hover:underline font-medium">
+                        {lead.nome} {lead.cognome}
+                      </Link>
+                    </td>
+                    <td className="py-2 text-muted-foreground">{lead.azienda ?? '—'}</td>
+                    <td className="py-2 text-muted-foreground">{lead.stadio_pipeline}</td>
+                    <td className="py-2 text-muted-foreground">{lead.origine ?? '—'}</td>
+                    <td className="py-2 text-right font-medium text-blue-700">
+                      {lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}
+                    </td>
+                    <td className="py-2 text-right text-muted-foreground">
+                      {lead.giorni_aperto != null ? `${lead.giorni_aperto}gg` : '—'}
                     </td>
                   </tr>
                 ))}
