@@ -16,13 +16,14 @@ export default async function DashboardPage() {
 
   const allLeads = (leads ?? []).map(l => computeLeadFields(l))
   const openLeads = allLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
-  const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Vinto')
+  const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Chiuso (Vinto)')
   const conversionRate = allLeads.length > 0
     ? Math.round((wonLeads.length / allLeads.length) * 100)
     : 0
 
-  const avgDaysToClose = wonLeads.filter(l => l.giorni_aperto !== null).length > 0
-    ? Math.round(wonLeads.reduce((sum, l) => sum + (l.giorni_aperto ?? 0), 0) / wonLeads.length)
+  const wonWithDays = wonLeads.filter(l => l.giorni_pipeline !== null)
+  const avgDaysToClose = wonWithDays.length > 0
+    ? Math.round(wonWithDays.reduce((sum, l) => sum + (l.giorni_pipeline ?? 0), 0) / wonWithDays.length)
     : 0
 
   const overdue = openLeads.filter(
@@ -34,11 +35,11 @@ export default async function DashboardPage() {
 
   const leadsByStage = settings.pipeline_stages.map(stage => ({
     stage,
-    count: openLeads.filter(l => l.stadio_pipeline === stage).length,
+    count: allLeads.filter(l => l.stadio_pipeline === stage).length,
   }))
 
   const leadsByOrigine: Record<string, number> = {}
-  for (const lead of openLeads) {
+  for (const lead of allLeads) {
     if (lead.origine) leadsByOrigine[lead.origine] = (leadsByOrigine[lead.origine] ?? 0) + 1
   }
 
@@ -47,8 +48,8 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-bold">Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatsCard title="Lead aperti" value={openLeads.length} />
-        <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti`} />
+        <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} />
+        <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti su ${allLeads.length}`} />
         <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} />
         <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} />
       </div>
