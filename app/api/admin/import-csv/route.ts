@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   if (rows.length === 0) return NextResponse.json({ error: 'CSV vuoto o non valido' }, { status: 400 })
 
   const leads = rows
-    .filter(r => r['Email'] && r['Email'].trim() !== '')
+    .filter(r => r['Email'] && r['Email'].trim() !== '' && r['Email'].includes('@'))
     .map(r => ({
       email: r['Email'].trim().toLowerCase(),
       nome: r['Nome'] || null,
