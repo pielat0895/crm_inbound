@@ -16,22 +16,54 @@ function toBool(s: string | undefined): boolean | null {
   return null
 }
 
+// Parses Italian currency format: "57.000,00 €" → 57000
+function parseValore(s: string | undefined): number | null {
+  if (!s || s.trim() === '') return null
+  const cleaned = s.replace(/[€\s]/g, '').replace(/\./g, '').replace(',', '.')
+  const n = parseFloat(cleaned)
+  return isNaN(n) ? null : n
+}
+
+// Handles quoted fields with embedded newlines (RFC 4180 compliant)
 function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.split(/\r?\n/).filter(l => l.trim())
-  if (lines.length < 2) return []
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
-  return lines.slice(1).map(line => {
-    const values: string[] = []
-    let current = ''
-    let inQuotes = false
-    for (const char of line) {
-      if (char === '"') { inQuotes = !inQuotes }
-      else if (char === ',' && !inQuotes) { values.push(current); current = '' }
-      else current += char
+  const rows: string[][] = []
+  let current: string[] = []
+  let field = ''
+  let inQuotes = false
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++ }
+        else inQuotes = false
+      } else {
+        field += ch
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true
+      } else if (ch === ',') {
+        current.push(field.trim())
+        field = ''
+      } else if (ch === '\n' || (ch === '\r' && text[i + 1] === '\n')) {
+        if (ch === '\r') i++
+        current.push(field.trim())
+        field = ''
+        if (current.some(f => f !== '')) rows.push(current)
+        current = []
+      } else {
+        field += ch
+      }
     }
-    values.push(current)
+  }
+  if (field || current.length) { current.push(field.trim()); if (current.some(f => f !== '')) rows.push(current) }
+
+  if (rows.length < 2) return []
+  const headers = rows[0].map(h => h.replace(/^"|"$/g, ''))
+  return rows.slice(1).map(values => {
     const row: Record<string, string> = {}
-    headers.forEach((h, i) => { row[h] = (values[i] ?? '').trim().replace(/^"|"$/g, '') })
+    headers.forEach((h, i) => { row[h] = (values[i] ?? '').replace(/^"|"$/g, '') })
     return row
   })
 }
@@ -66,13 +98,17 @@ export async function POST(request: NextRequest) {
       data_ultimo_contatto: toISO(r['Data Ultimo Contatto']),
       data_apertura: toISO(r['Data_apertura']),
       appuntamento: null,
-      valore: r['Valore'] ? parseFloat(r['Valore'].replace(',', '.')) || null : null,
+      valore: parseValore(r['Valore']),
       note: r['Note'] || null,
       owner: r['Owner'] || null,
       industry: r['Industry'] || null,
       esperienza_us: r['Esperienza US'] || null,
       dipendenti: r['Dipendenti'] ? parseInt(r['Dipendenti']) || null : null,
       company_web: r['Company Web'] || null,
+      hanno_sito: toBool(r['Hanno sito']),
+      numero_messaggi: r['Numero messaggi'] ? parseInt(r['Numero messaggi']) || 0 : 0,
+      risposto_ultima_mail: toBool(r['Risposto Ultima Mail']) ?? false,
+      touchpoints: 0,
     }))
 
   // Deduplica per email: tieni l'ultima occorrenza (più recente nel CSV)
