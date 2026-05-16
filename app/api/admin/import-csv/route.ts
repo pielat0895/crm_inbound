@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       data_chiusura: toISO(r['Data di Chiusura']),
       data_ultimo_contatto: toISO(r['Data Ultimo Contatto']),
       data_apertura: toISO(r['Data_apertura']),
-      appuntamento: (r['Appuntamento'] && r['Appuntamento'] !== 'Non effettuato') ? r['Appuntamento'] : null,
+      appuntamento: null,
       valore: r['Valore'] ? parseFloat(r['Valore'].replace(',', '.')) || null : null,
       note: r['Note'] || null,
       owner: r['Owner'] || null,
