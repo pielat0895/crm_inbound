@@ -15,7 +15,7 @@ const links = [
 export function Nav() {
   const pathname = usePathname()
   return (
-    <nav className="fixed left-0 top-0 h-full w-56 border-r bg-background flex flex-col">
+    <nav className="hidden lg:flex fixed left-0 top-0 h-full w-56 border-r bg-background flex-col">
       <div className="flex items-center gap-2 px-5 py-5 border-b">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
           <Zap className="h-4 w-4 text-primary-foreground" />

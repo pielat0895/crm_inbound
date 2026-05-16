@@ -57,6 +57,11 @@ export function KanbanCard({ lead, threshold }: Props) {
       {lead.azienda && (
         <p className="text-xs text-muted-foreground">{lead.azienda}</p>
       )}
+      {lead.note && (
+        <p className="text-xs text-muted-foreground italic line-clamp-2 border-l-2 border-muted pl-2">
+          {lead.note}
+        </p>
+      )}
       <div className="flex gap-1.5 flex-wrap items-center">
         {lead.origine && (
           <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${origineClass}`}>

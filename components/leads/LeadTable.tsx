@@ -3,7 +3,9 @@ import { useRouter } from 'next/navigation'
 import type { LeadWithComputed } from '@/types'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SortableHeader } from './SortableHeader'
+import { ChevronLeft, ChevronRight, Users, SearchX } from 'lucide-react'
 
 const STAGE_COLORS: Record<string, string> = {
   'Lead In':        'bg-blue-100 text-blue-700',
@@ -21,9 +23,12 @@ type Props = {
   total: number
   page: number
   pageSize: number
+  hasFilters?: boolean
+  sortBy?: string
+  sortDir?: string
 }
 
-export function LeadTable({ leads, threshold, total, page, pageSize }: Props) {
+export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters, sortBy = 'created_at', sortDir = 'desc' }: Props) {
   const router = useRouter()
   const totalPages = Math.ceil(total / pageSize)
 
@@ -39,13 +44,13 @@ export function LeadTable({ leads, threshold, total, page, pageSize }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="px-4 py-2 text-left font-medium">Nome</th>
-              <th className="px-4 py-2 text-left font-medium">Azienda</th>
+              <th className="px-4 py-2 text-left"><SortableHeader label="Nome" column="nome" currentSort={sortBy} currentDir={sortDir} /></th>
+              <th className="px-4 py-2 text-left"><SortableHeader label="Azienda" column="azienda" currentSort={sortBy} currentDir={sortDir} /></th>
               <th className="px-4 py-2 text-left font-medium">Origine</th>
               <th className="px-4 py-2 text-left font-medium">Stadio</th>
-              <th className="px-4 py-2 text-left font-medium">Ultimo contatto</th>
+              <th className="px-4 py-2 text-left"><SortableHeader label="Ultimo contatto" column="data_ultimo_contatto" currentSort={sortBy} currentDir={sortDir} /></th>
               <th className="px-4 py-2 text-left font-medium">Follow-up</th>
-              <th className="px-4 py-2 text-left font-medium">Valore</th>
+              <th className="px-4 py-2 text-left"><SortableHeader label="Valore" column="valore" currentSort={sortBy} currentDir={sortDir} /></th>
             </tr>
           </thead>
           <tbody>
@@ -78,8 +83,13 @@ export function LeadTable({ leads, threshold, total, page, pageSize }: Props) {
             ))}
             {leads.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                  Nessun lead trovato
+                <td colSpan={7}>
+                  <EmptyState
+                    icon={hasFilters ? SearchX : Users}
+                    title={hasFilters ? 'Nessun risultato' : 'Nessun lead ancora'}
+                    description={hasFilters ? 'Prova a cambiare i filtri o la ricerca.' : 'Aggiungi il tuo primo lead per iniziare.'}
+                    action={hasFilters ? undefined : { label: 'Aggiungi lead', href: '/leads/new' }}
+                  />
                 </td>
               </tr>
             )}
