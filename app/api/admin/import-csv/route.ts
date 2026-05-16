@@ -75,10 +75,15 @@ export async function POST(request: NextRequest) {
       company_web: r['Company Web'] || null,
     }))
 
+  // Deduplica per email: tieni l'ultima occorrenza (più recente nel CSV)
+  const deduped = Object.values(
+    leads.reduce<Record<string, typeof leads[0]>>((acc, l) => { acc[l.email] = l; return acc }, {})
+  )
+
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('leads')
-    .upsert(leads, { onConflict: 'email', ignoreDuplicates: false })
+    .upsert(deduped, { onConflict: 'email', ignoreDuplicates: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true, imported: leads.length })
