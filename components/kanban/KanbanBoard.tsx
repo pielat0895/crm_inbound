@@ -10,7 +10,8 @@ import { KanbanCard } from './KanbanCard'
 import type { LeadWithComputed } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
-import { Search } from 'lucide-react'
+import { Search, Inbox } from 'lucide-react'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 type Props = {
   initialLeads: LeadWithComputed[]
@@ -19,8 +20,8 @@ type Props = {
 }
 
 function DroppableColumn({
-  stage, leads, threshold,
-}: { stage: string; leads: LeadWithComputed[]; threshold: number }) {
+  stage, leads, threshold, hasSearch,
+}: { stage: string; leads: LeadWithComputed[]; threshold: number; hasSearch: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage })
   return (
     <div
@@ -30,6 +31,15 @@ function DroppableColumn({
       {leads.map(lead => (
         <KanbanCard key={lead.id} lead={lead} threshold={threshold} />
       ))}
+      {leads.length === 0 && !hasSearch && (
+        <div className="py-6">
+          <EmptyState
+            icon={Inbox}
+            title="Nessun lead"
+            description="Trascina qui un lead o aggiungine uno nuovo."
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -78,12 +88,18 @@ export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
     if (!over) return
 
     const leadId = active.id as string
-    const newStage = over.id as string
+    const overId = over.id as string
+
+    // over.id può essere un nome stage (colonna droppable) o un UUID card (sortable item)
+    const newStage = stages.includes(overId)
+      ? overId
+      : leads.find(l => l.id === overId)?.stadio_pipeline
+
+    if (!newStage) return
 
     const lead = leads.find(l => l.id === leadId)
     if (!lead || lead.stadio_pipeline === newStage) return
 
-    // Optimistic update
     setLeads(prev =>
       prev.map(l => l.id === leadId ? { ...l, stadio_pipeline: newStage } : l)
     )
@@ -93,7 +109,7 @@ export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stadio_pipeline: newStage }),
     })
-  }, [leads])
+  }, [leads, stages])
 
   const activeLead = leads.find(l => l.id === activeId) ?? null
 
@@ -129,7 +145,7 @@ export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
                 items={stageLeads.map(l => l.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <DroppableColumn stage={stage} leads={stageLeads} threshold={threshold} />
+                <DroppableColumn stage={stage} leads={stageLeads} threshold={threshold} hasSearch={!!search.trim()} />
               </SortableContext>
             </div>
           )
