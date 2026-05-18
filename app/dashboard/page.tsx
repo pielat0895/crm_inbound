@@ -53,7 +53,8 @@ export default async function DashboardPage({
   }
 
   const allLeads = allLeadsRaw.filter(l => filterByDate(l, l.data_apertura))
-  const openLeads = allLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
+  // openLeads uses unfiltered data — open deals are relevant regardless of when they were created
+  const openLeads = allLeadsRaw.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
   const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Chiuso (Vinto)')
 
   const conversionRate = allLeads.length > 0
