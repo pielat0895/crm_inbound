@@ -218,7 +218,17 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
           </div>
           <Field label="Stato" name="stato" />
           <Field label="Motivo lost" name="motivo_lost" />
-          <Field label="Valore (€)" name="valore" type="number" />
+          <div className="space-y-1">
+            <Label htmlFor="valore">Valore (€)</Label>
+            <Input
+              id="valore"
+              type="text"
+              inputMode="decimal"
+              value={form.valore}
+              onChange={e => set('valore', e.target.value)}
+              placeholder="es. 10000"
+            />
+          </div>
           <Field label="Owner" name="owner" />
         </div>
       </section>
