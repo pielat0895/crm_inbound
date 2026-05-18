@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -12,20 +12,31 @@ type Props = {
 export function NoteTab({ leadId, initialNote }: Props) {
   const [note, setNote] = useState(initialNote ?? '')
   const [status, setStatus] = useState<SaveStatus>('idle')
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }, [])
 
   const handleBlur = useCallback(async () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
     setStatus('saving')
-    const res = await fetch(`/api/leads/${leadId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note }),
-    })
-    if (res.ok) {
-      setStatus('saved')
-      setTimeout(() => setStatus('idle'), 2000)
-    } else {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note }),
+      })
+      if (res.ok) {
+        setStatus('saved')
+        timerRef.current = setTimeout(() => setStatus('idle'), 2000)
+      } else {
+        setStatus('error')
+        timerRef.current = setTimeout(() => setStatus('idle'), 3000)
+      }
+    } catch {
       setStatus('error')
-      setTimeout(() => setStatus('idle'), 3000)
+      timerRef.current = setTimeout(() => setStatus('idle'), 3000)
     }
   }, [leadId, note])
 
