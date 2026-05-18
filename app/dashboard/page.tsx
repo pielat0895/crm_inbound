@@ -9,6 +9,9 @@ import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target } from 'luc
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
+import { SitoChart } from '@/components/dashboard/SitoChart'
+import { DipendentiChart } from '@/components/dashboard/DipendentiChart'
+import { IndustryChart } from '@/components/dashboard/IndustryChart'
 import { DateFilter } from '@/components/dashboard/DateFilter'
 import { Suspense } from 'react'
 
@@ -117,6 +120,39 @@ export default async function DashboardPage({
     tasso: Math.round((vinti / totale) * 100),
   }))
 
+  // Sito chart data
+  const sitoChartData = [
+    { name: 'Sì', value: allLeads.filter(l => l.hanno_sito === true).length },
+    { name: 'No', value: allLeads.filter(l => l.hanno_sito === false).length },
+    { name: 'N/D', value: allLeads.filter(l => l.hanno_sito === null).length },
+  ].filter(d => d.value > 0)
+
+  // Dipendenti ranges chart data
+  const dipRanges = [
+    { range: '1–5',    test: (n: number) => n >= 1 && n <= 5 },
+    { range: '6–15',   test: (n: number) => n >= 6 && n <= 15 },
+    { range: '16–50',  test: (n: number) => n >= 16 && n <= 50 },
+    { range: '51–200', test: (n: number) => n >= 51 && n <= 200 },
+    { range: '200+',   test: (n: number) => n > 200 },
+  ]
+  const dipendentiChartData = [
+    ...dipRanges.map(({ range, test }) => ({
+      range,
+      count: allLeads.filter(l => l.dipendenti !== null && test(l.dipendenti)).length,
+    })),
+    { range: 'N/D', count: allLeads.filter(l => l.dipendenti === null).length },
+  ].filter(d => d.count > 0)
+
+  // Industry chart data
+  const industryMap: Record<string, number> = {}
+  for (const lead of allLeads) {
+    const key = lead.industry ?? 'N/D'
+    industryMap[key] = (industryMap[key] ?? 0) + 1
+  }
+  const industryChartData = Object.entries(industryMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+
   const wonDealsSorted = wonLeads
     .filter(l => l.data_chiusura)
     .sort((a, b) => (b.data_chiusura ?? '').localeCompare(a.data_chiusura ?? ''))
@@ -156,6 +192,21 @@ export default async function DashboardPage({
         <div className="rounded-lg border p-4">
           <h2 className="font-semibold mb-4">Conversione per origine</h2>
           <ConversionChart data={conversionChartData} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Hanno sito web</h2>
+          <SitoChart data={sitoChartData} />
+        </div>
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Dimensione azienda (dipendenti)</h2>
+          <DipendentiChart data={dipendentiChartData} />
+        </div>
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Industry</h2>
+          <IndustryChart data={industryChartData} />
         </div>
       </div>
 
