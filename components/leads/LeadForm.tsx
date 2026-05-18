@@ -14,9 +14,10 @@ import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUST
 type Props = {
   lead?: LeadWithComputed
   stages?: string[]
+  hideNote?: boolean
 }
 
-export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
+export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: Props) {
   const router = useRouter()
   const isEdit = !!lead
 
@@ -83,6 +84,8 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
     for (const key of Object.keys(body)) {
       if (body[key] === '') body[key] = null
     }
+
+    if (hideNote) delete body.note
 
     const url = isEdit ? `/api/leads/${lead!.id}` : '/api/leads'
     const method = isEdit ? 'PATCH' : 'POST'
@@ -275,10 +278,12 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES }: Props) {
         </div>
       </section>
 
-      <section className="space-y-2">
-        <Label htmlFor="note">Note</Label>
-        <Textarea id="note" value={form.note} onChange={e => set('note', e.target.value)} rows={4} />
-      </section>
+      {!hideNote && (
+        <section className="space-y-2">
+          <Label htmlFor="note">Note</Label>
+          <Textarea id="note" value={form.note} onChange={e => set('note', e.target.value)} rows={4} />
+        </section>
+      )}
 
       <div className="flex gap-3">
         <Button type="submit" disabled={loading}>
