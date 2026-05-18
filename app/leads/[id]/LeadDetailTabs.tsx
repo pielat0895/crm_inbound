@@ -13,6 +13,12 @@ type Props = {
   stages: string[]
 }
 
+function tabClass(active: boolean) {
+  return `rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+    active ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+  }`
+}
+
 export function LeadDetailTabs({ lead, interactions, stages }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('dettagli')
 
@@ -21,40 +27,34 @@ export function LeadDetailTabs({ lead, interactions, stages }: Props) {
       {/* Left column: pill tabs + content */}
       <div>
         {/* Pill tabs */}
-        <div className="inline-flex bg-muted rounded-full p-1 mb-6">
+        <div role="tablist" aria-label="Sezioni lead" className="inline-flex bg-muted rounded-full p-1 mb-6">
           <button
+            role="tab"
+            aria-selected={activeTab === 'dettagli'}
             type="button"
             onClick={() => setActiveTab('dettagli')}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-              activeTab === 'dettagli'
-                ? 'bg-white shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={tabClass(activeTab === 'dettagli')}
           >
             Dettagli
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'note'}
             type="button"
             onClick={() => setActiveTab('note')}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-              activeTab === 'note'
-                ? 'bg-white shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={tabClass(activeTab === 'note')}
           >
             Note
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'hubspot'}
             type="button"
             onClick={() => setActiveTab('hubspot')}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all flex items-center gap-1.5 ${
-              activeTab === 'hubspot'
-                ? 'bg-white shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={`${tabClass(activeTab === 'hubspot')} flex items-center gap-1.5`}
           >
             HubSpot
-            <span className="text-xs bg-indigo-100 text-indigo-600 rounded px-1.5 py-0.5 leading-none">
+            <span aria-hidden="true" className="text-xs bg-indigo-100 text-indigo-600 rounded px-1.5 py-0.5 leading-none">
               presto
             </span>
           </button>
@@ -80,6 +80,7 @@ export function LeadDetailTabs({ lead, interactions, stages }: Props) {
             <button
               type="button"
               disabled
+              aria-disabled="true"
               className="text-sm px-4 py-2 rounded-md border bg-muted text-muted-foreground cursor-not-allowed"
             >
               Collega manualmente

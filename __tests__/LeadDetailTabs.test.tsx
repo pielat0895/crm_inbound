@@ -30,11 +30,11 @@ const mockLead: LeadWithComputed = {
 const mockInteractions: Interaction[] = []
 
 describe('LeadDetailTabs', () => {
-  test('renders 3 tab buttons', () => {
+  test('renders 3 tabs', () => {
     render(<LeadDetailTabs lead={mockLead} interactions={mockInteractions} stages={[]} />)
-    expect(screen.getByRole('button', { name: 'Dettagli' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Note' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /HubSpot/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Dettagli' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Note' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'HubSpot' })).toBeInTheDocument()
   })
 
   test('shows LeadForm by default (Dettagli tab)', () => {
@@ -50,21 +50,21 @@ describe('LeadDetailTabs', () => {
 
   test('clicking Note tab shows NoteTab', () => {
     render(<LeadDetailTabs lead={mockLead} interactions={mockInteractions} stages={[]} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Note' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Note' }))
     expect(screen.getByTestId('note-tab')).toBeInTheDocument()
     expect(screen.queryByTestId('lead-form')).not.toBeInTheDocument()
   })
 
   test('clicking HubSpot tab shows placeholder text', () => {
     render(<LeadDetailTabs lead={mockLead} interactions={mockInteractions} stages={[]} />)
-    fireEvent.click(screen.getByRole('button', { name: /HubSpot/ }))
+    fireEvent.click(screen.getByRole('tab', { name: 'HubSpot' }))
     expect(screen.getByText(/non ancora sincronizzato/i)).toBeInTheDocument()
   })
 
   test('clicking Dettagli tab after switching returns to LeadForm', () => {
     render(<LeadDetailTabs lead={mockLead} interactions={mockInteractions} stages={[]} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Note' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Dettagli' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Note' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Dettagli' }))
     expect(screen.getByTestId('lead-form')).toBeInTheDocument()
   })
 })
