@@ -127,21 +127,17 @@ export default async function DashboardPage({
     { name: 'N/D', value: allLeads.filter(l => l.hanno_sito === null).length },
   ].filter(d => d.value > 0)
 
-  // Dipendenti ranges chart data
-  const dipRanges = [
-    { range: '1–5',    test: (n: number) => n >= 1 && n <= 5 },
-    { range: '6–15',   test: (n: number) => n >= 6 && n <= 15 },
-    { range: '16–50',  test: (n: number) => n >= 16 && n <= 50 },
-    { range: '51–200', test: (n: number) => n >= 51 && n <= 200 },
-    { range: '200+',   test: (n: number) => n > 200 },
-  ]
+  // Dipendenti chart data — count by predefined range string
+  const dipendentiOrder = ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001-10000','10000+','Studente','Autonomo']
+  const dipendentiMap: Record<string, number> = {}
+  for (const lead of allLeads) {
+    const key = lead.dipendenti ?? 'N/D'
+    dipendentiMap[key] = (dipendentiMap[key] ?? 0) + 1
+  }
   const dipendentiChartData = [
-    ...dipRanges.map(({ range, test }) => ({
-      range,
-      count: allLeads.filter(l => l.dipendenti !== null && test(l.dipendenti)).length,
-    })),
-    { range: 'N/D', count: allLeads.filter(l => l.dipendenti === null).length },
-  ].filter(d => d.count > 0)
+    ...dipendentiOrder.filter(r => dipendentiMap[r]).map(r => ({ range: r, count: dipendentiMap[r] })),
+    ...(dipendentiMap['N/D'] ? [{ range: 'N/D', count: dipendentiMap['N/D'] }] : []),
+  ]
 
   // Industry chart data
   const industryMap: Record<string, number> = {}

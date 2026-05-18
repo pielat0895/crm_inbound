@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import type { LeadWithComputed } from '@/types'
-import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUSTRY_OPTIONS, STATO_LEAD_OPTIONS } from '@/types'
+import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUSTRY_OPTIONS, STATO_LEAD_OPTIONS, DIPENDENTI_OPTIONS } from '@/types'
 
 type Props = {
   lead?: LeadWithComputed
@@ -32,7 +32,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
     richiesta: lead?.richiesta ?? '',
     origine: lead?.origine ?? '',
     industry: lead?.industry ?? '',
-    dipendenti: lead?.dipendenti?.toString() ?? '',
+    dipendenti: lead?.dipendenti ?? '',
     hanno_sito: lead?.hanno_sito != null ? String(lead.hanno_sito) : '',
     company_web: lead?.company_web ?? '',
     esperienza_us: lead?.esperienza_us ?? '',
@@ -65,8 +65,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
     const body: Record<string, unknown> = { ...form }
 
     // Coerce numeric fields
-    if (body.dipendenti) body.dipendenti = parseInt(body.dipendenti as string, 10)
-    else delete body.dipendenti
+    if (!body.dipendenti) delete body.dipendenti
     if (body.valore) body.valore = parseFloat(body.valore as string)
     else delete body.valore
     if (body.numero_messaggi !== undefined) body.numero_messaggi = parseInt(body.numero_messaggi as string, 10) || 0
@@ -167,7 +166,15 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
               </SelectContent>
             </Select>
           </div>
-          <Field label="Dipendenti" name="dipendenti" type="number" />
+          <div className="space-y-1">
+            <Label>Dipendenti</Label>
+            <Select value={form.dipendenti ?? ''} onValueChange={v => set('dipendenti', v ?? '')}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                {DIPENDENTI_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <Field label="Sito web aziendale" name="company_web" />
           <div className="space-y-1">
             <Label>Hanno sito</Label>

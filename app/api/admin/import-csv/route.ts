@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       owner: r['Owner'] || null,
       industry: r['Industry'] || null,
       esperienza_us: r['Esperienza US'] || null,
-      dipendenti: r['Dipendenti'] ? parseInt(r['Dipendenti']) || null : null,
+      dipendenti: r['Dipendenti'] || null,
       company_web: r['Company Web'] || null,
       hanno_sito: toBool(r['Hanno sito']),
       numero_messaggi: r['Numero messaggi'] ? parseInt(r['Numero messaggi']) || 0 : 0,

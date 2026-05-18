@@ -11,7 +11,7 @@ export type Lead = {
   richiesta: string | null
   origine: string | null
   industry: string | null
-  dipendenti: number | null
+  dipendenti: string | null
   hanno_sito: boolean | null
   company_web: string | null
   esperienza_us: string | null
@@ -63,6 +63,19 @@ export const DEFAULT_PIPELINE_STAGES = [
 ]
 
 export const CLOSED_STAGES = ['Chiuso (Vinto)', 'Chiuso (Perso)']
+
+export const DIPENDENTI_OPTIONS = [
+  '1-10',
+  '11-50',
+  '51-200',
+  '201-500',
+  '501-1000',
+  '1001-5000',
+  '5001-10000',
+  '10000+',
+  'Studente',
+  'Autonomo',
+]
 
 export const ORIGINE_OPTIONS = [
   'Info',
