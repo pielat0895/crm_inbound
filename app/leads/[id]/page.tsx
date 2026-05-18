@@ -3,8 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { computeLeadFields } from '@/types'
-import { LeadForm } from '@/components/leads/LeadForm'
-import { InteractionTimeline } from '@/components/leads/InteractionTimeline'
+import { LeadDetailTabs } from './LeadDetailTabs'
 import { Badge } from '@/components/ui/badge'
 import { notFound } from 'next/navigation'
 import { CalendarButton } from './CalendarButton'
@@ -109,14 +108,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      {/* 2 colonne: form + interazioni */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
-        <LeadForm lead={computed} stages={settings.pipeline_stages} />
-
-        <div className="lg:sticky lg:top-6">
-          <InteractionTimeline leadId={id} interactions={interactions ?? []} />
-        </div>
-      </div>
+      <LeadDetailTabs
+        lead={computed}
+        interactions={interactions ?? []}
+        stages={settings.pipeline_stages}
+      />
 
     </div>
   )
