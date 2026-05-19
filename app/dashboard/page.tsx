@@ -9,9 +9,8 @@ import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target } from 'luc
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
-import { SitoChart } from '@/components/dashboard/SitoChart'
-import { DipendentiChart } from '@/components/dashboard/DipendentiChart'
-import { IndustryChart } from '@/components/dashboard/IndustryChart'
+import { ChartsSection } from '@/components/dashboard/ChartsSection'
+import type { SlimLead } from '@/components/dashboard/ChartsSection'
 import { DateFilter } from '@/components/dashboard/DateFilter'
 import { Suspense } from 'react'
 
@@ -149,6 +148,17 @@ export default async function DashboardPage({
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
+  const slimLeads: SlimLead[] = allLeadsRaw.map(l => ({
+    id: l.id,
+    nome: l.nome,
+    cognome: l.cognome,
+    azienda: l.azienda,
+    stadio_pipeline: l.stadio_pipeline,
+    valore: l.valore,
+    industry: l.industry,
+    dipendenti: l.dipendenti,
+  }))
+
   const wonDealsSorted = wonLeads
     .filter(l => l.data_chiusura)
     .sort((a, b) => (b.data_chiusura ?? '').localeCompare(a.data_chiusura ?? ''))
@@ -191,20 +201,12 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-4">Hanno sito web</h2>
-          <SitoChart data={sitoChartData} />
-        </div>
-        <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-4">Dimensione azienda (dipendenti)</h2>
-          <DipendentiChart data={dipendentiChartData} />
-        </div>
-        <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-4">Industry</h2>
-          <IndustryChart data={industryChartData} />
-        </div>
-      </div>
+      <ChartsSection
+        sitoChartData={sitoChartData}
+        dipendentiChartData={dipendentiChartData}
+        industryChartData={industryChartData}
+        leads={slimLeads}
+      />
 
       {wonDealsSorted.length > 0 && (
         <div className="rounded-lg border p-4">
