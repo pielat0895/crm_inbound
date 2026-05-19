@@ -109,7 +109,7 @@ export default async function DashboardPage({
     const media = Math.round(w.reduce((a, b) => a + b, 0) / w.length)
     const [year, m] = month.split('-')
     const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
-    return { label, count, media }
+    return { label, count, media, month }
   })
 
   const conversionChartData = conversionePerOrigine.map(({ origine, totale, vinti }) => ({
@@ -157,6 +157,8 @@ export default async function DashboardPage({
     valore: l.valore,
     industry: l.industry,
     dipendenti: l.dipendenti,
+    origine: l.origine,
+    data_apertura: l.data_apertura,
   }))
 
   const wonDealsSorted = wonLeads
@@ -185,26 +187,13 @@ export default async function DashboardPage({
         <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} icon={AlertCircle} color="red" />
       </div>
 
-      <div className="rounded-lg border p-4">
-        <h2 className="font-semibold mb-4">Trend mensile lead</h2>
-        <TrendChart data={trendChartData} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-4">Pipeline per stadio</h2>
-          <PipelineChart data={leadsByStage} />
-        </div>
-        <div className="rounded-lg border p-4">
-          <h2 className="font-semibold mb-4">Conversione per origine</h2>
-          <ConversionChart data={conversionChartData} />
-        </div>
-      </div>
-
       <ChartsSection
         sitoChartData={sitoChartData}
         dipendentiChartData={dipendentiChartData}
         industryChartData={industryChartData}
+        trendChartData={trendChartData}
+        pipelineData={leadsByStage}
+        conversionChartData={conversionChartData}
         leads={slimLeads}
       />
 

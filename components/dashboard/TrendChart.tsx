@@ -5,10 +5,11 @@ import {
 } from 'recharts'
 
 type Props = {
-  data: { label: string; count: number; media: number }[]
+  data: { label: string; count: number; media: number; month: string }[]
+  onSegmentClick?: (month: string, label: string) => void
 }
 
-export function TrendChart({ data }: Props) {
+export function TrendChart({ data, onSegmentClick }: Props) {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <ComposedChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
@@ -27,7 +28,14 @@ export function TrendChart({ data }: Props) {
           formatter={v => v === 'count' ? 'Lead / mese' : 'Media mobile 3 mesi'}
           wrapperStyle={{ fontSize: 11 }}
         />
-        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} name="count" />
+        <Bar
+          dataKey="count"
+          fill="#6366f1"
+          radius={[4, 4, 0, 0]}
+          name="count"
+          cursor={onSegmentClick ? 'pointer' : undefined}
+          onClick={onSegmentClick ? (entry: any) => onSegmentClick(entry.month, entry.label) : undefined}
+        />
         <Line
           dataKey="media"
           stroke="#f59e0b"

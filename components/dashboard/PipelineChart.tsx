@@ -16,9 +16,10 @@ const STAGE_COLORS: Record<string, string> = {
 
 type Props = {
   data: { stage: string; count: number; revenue: number }[]
+  onSegmentClick?: (stage: string) => void
 }
 
-export function PipelineChart({ data }: Props) {
+export function PipelineChart({ data, onSegmentClick }: Props) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart
@@ -39,7 +40,12 @@ export function PipelineChart({ data }: Props) {
             ]
           }}
         />
-        <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+        <Bar
+          dataKey="count"
+          radius={[0, 4, 4, 0]}
+          cursor={onSegmentClick ? 'pointer' : undefined}
+          onClick={onSegmentClick ? (entry: any) => onSegmentClick(entry.stage) : undefined}
+        >
           {data.map(entry => (
             <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] ?? '#6366f1'} />
           ))}

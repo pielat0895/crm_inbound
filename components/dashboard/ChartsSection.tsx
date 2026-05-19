@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { SitoChart } from '@/components/dashboard/SitoChart'
 import { DipendentiChart } from '@/components/dashboard/DipendentiChart'
 import { IndustryChart } from '@/components/dashboard/IndustryChart'
+import { TrendChart } from '@/components/dashboard/TrendChart'
+import { PipelineChart } from '@/components/dashboard/PipelineChart'
+import { ConversionChart } from '@/components/dashboard/ConversionChart'
 import {
   Dialog,
   DialogContent,
@@ -20,12 +23,17 @@ export type SlimLead = {
   valore: number | null
   industry: string | null
   dipendenti: string | null
+  origine: string | null
+  data_apertura: string | null
 }
 
 type Props = {
   sitoChartData: { name: string; value: number }[]
   dipendentiChartData: { range: string; count: number }[]
   industryChartData: { name: string; value: number }[]
+  trendChartData: { label: string; count: number; media: number; month: string }[]
+  pipelineData: { stage: string; count: number; revenue: number }[]
+  conversionChartData: { origine: string; tassoVinti: number; tassoNonVinti: number; tasso: number }[]
   leads: SlimLead[]
 }
 
@@ -35,25 +43,67 @@ type ModalState = {
   leads: SlimLead[]
 }
 
-export function ChartsSection({ sitoChartData, dipendentiChartData, industryChartData, leads }: Props) {
+export function ChartsSection({
+  sitoChartData,
+  dipendentiChartData,
+  industryChartData,
+  trendChartData,
+  pipelineData,
+  conversionChartData,
+  leads,
+}: Props) {
   const [modal, setModal] = useState<ModalState>({ open: false, title: '', leads: [] })
 
+  function open(title: string, filtered: SlimLead[]) {
+    setModal({ open: true, title, leads: filtered })
+  }
+
   function openDipendenti(range: string) {
-    const filtered = leads.filter(l =>
+    open(`Dimensione azienda: ${range}`, leads.filter(l =>
       range === 'N/D' ? !l.dipendenti : l.dipendenti === range
-    )
-    setModal({ open: true, title: `Dimensione azienda: ${range}`, leads: filtered })
+    ))
   }
 
   function openIndustry(name: string) {
-    const filtered = leads.filter(l =>
+    open(`Industry: ${name}`, leads.filter(l =>
       name === 'N/D' ? !l.industry : l.industry === name
-    )
-    setModal({ open: true, title: `Industry: ${name}`, leads: filtered })
+    ))
+  }
+
+  function openTrend(month: string, label: string) {
+    open(`Lead aperti: ${label}`, leads.filter(l =>
+      l.data_apertura?.slice(0, 7) === month
+    ))
+  }
+
+  function openPipeline(stage: string) {
+    open(`Stadio: ${stage}`, leads.filter(l => l.stadio_pipeline === stage))
+  }
+
+  function openConversion(origine: string) {
+    open(`Origine: ${origine}`, leads.filter(l =>
+      origine === 'N/D' ? !l.origine : l.origine === origine
+    ))
   }
 
   return (
     <>
+      <div className="rounded-lg border p-4">
+        <h2 className="font-semibold mb-4">Trend mensile lead</h2>
+        <TrendChart data={trendChartData} onSegmentClick={openTrend} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Pipeline per stadio</h2>
+          <PipelineChart data={pipelineData} onSegmentClick={openPipeline} />
+        </div>
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Conversione per origine</h2>
+          <ConversionChart data={conversionChartData} onSegmentClick={openConversion} />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="rounded-lg border p-4">
           <h2 className="font-semibold mb-4">Hanno sito web</h2>
@@ -69,7 +119,7 @@ export function ChartsSection({ sitoChartData, dipendentiChartData, industryChar
         </div>
       </div>
 
-      <Dialog open={modal.open} onOpenChange={open => setModal(m => ({ ...m, open }))}>
+      <Dialog open={modal.open} onOpenChange={o => setModal(m => ({ ...m, open: o }))}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{modal.title} — {modal.leads.length} lead</DialogTitle>

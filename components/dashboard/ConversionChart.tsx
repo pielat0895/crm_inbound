@@ -6,9 +6,10 @@ import {
 
 type Props = {
   data: { origine: string; tassoVinti: number; tassoNonVinti: number; tasso: number }[]
+  onSegmentClick?: (origine: string) => void
 }
 
-export function ConversionChart({ data }: Props) {
+export function ConversionChart({ data, onSegmentClick }: Props) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
@@ -23,8 +24,24 @@ export function ConversionChart({ data }: Props) {
           ]}
         />
         <Legend formatter={v => v === 'tassoVinti' ? 'Convertiti' : 'Non convertiti'} wrapperStyle={{ fontSize: 11 }} />
-        <Bar dataKey="tassoVinti" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} name="tassoVinti" />
-        <Bar dataKey="tassoNonVinti" stackId="a" fill="#e5e7eb" radius={[4, 4, 0, 0]} name="tassoNonVinti" />
+        <Bar
+          dataKey="tassoVinti"
+          stackId="a"
+          fill="#10b981"
+          radius={[0, 0, 0, 0]}
+          name="tassoVinti"
+          cursor={onSegmentClick ? 'pointer' : undefined}
+          onClick={onSegmentClick ? (entry: any) => onSegmentClick(entry.origine) : undefined}
+        />
+        <Bar
+          dataKey="tassoNonVinti"
+          stackId="a"
+          fill="#e5e7eb"
+          radius={[4, 4, 0, 0]}
+          name="tassoNonVinti"
+          cursor={onSegmentClick ? 'pointer' : undefined}
+          onClick={onSegmentClick ? (entry: any) => onSegmentClick(entry.origine) : undefined}
+        />
       </BarChart>
     </ResponsiveContainer>
   )
