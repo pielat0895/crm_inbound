@@ -11,7 +11,7 @@ import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
 import { ChartsSection } from '@/components/dashboard/ChartsSection'
 import type { SlimLead } from '@/components/dashboard/ChartsSection'
-import { DateFilter } from '@/components/dashboard/DateFilter'
+import { DashboardFilters } from '@/components/dashboard/DashboardFilters'
 import { Suspense } from 'react'
 
 function getDateRange(range: string | null, from: string | null, to: string | null): { start: Date | null; end: Date | null } {
@@ -32,10 +32,13 @@ function getDateRange(range: string | null, from: string | null, to: string | nu
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string; from?: string; to?: string }>
+  searchParams: Promise<{ range?: string; from?: string; to?: string; owner?: string; stadio?: string; origine?: string }>
 }) {
   const sp = await searchParams
   const { start, end } = getDateRange(sp.range ?? null, sp.from ?? null, sp.to ?? null)
+  const filterOwner = sp.owner ?? null
+  const filterStadio = sp.stadio ?? null
+  const filterOrigine = sp.origine ?? null
 
   const supabase = createServiceClient()
   const [{ data: leads }, settings] = await Promise.all([
@@ -44,6 +47,12 @@ export default async function DashboardPage({
   ])
 
   const allLeadsRaw = (leads ?? []).map(l => computeLeadFields(l))
+
+  const baseLeads = allLeadsRaw.filter(l =>
+    (!filterOwner || l.owner === filterOwner) &&
+    (!filterStadio || l.stadio_pipeline === filterStadio) &&
+    (!filterOrigine || l.origine === filterOrigine)
+  )
 
   const filterByDate = (l: (typeof allLeadsRaw)[0], dateField: string | null) => {
     if (!start && !end) return true
@@ -54,9 +63,9 @@ export default async function DashboardPage({
     return true
   }
 
-  const allLeads = allLeadsRaw.filter(l => filterByDate(l, l.data_apertura))
-  // openLeads uses unfiltered data — open deals are relevant regardless of when they were created
-  const openLeads = allLeadsRaw.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
+  const allLeads = baseLeads.filter(l => filterByDate(l, l.data_apertura))
+  // openLeads uses baseLeads (owner/stadio/origine filtered) but ignores date
+  const openLeads = baseLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
   const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Chiuso (Vinto)')
 
   const conversionRate = allLeads.length > 0
@@ -126,10 +135,10 @@ export default async function DashboardPage({
     { name: 'N/D', value: allLeads.filter(l => l.hanno_sito === null).length },
   ].filter(d => d.value > 0)
 
-  // Dipendenti chart data — count by predefined range string (all leads, not date-filtered)
+  // Dipendenti chart data — count by predefined range string
   const dipendentiOrder = ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001-10000','10000+','Studente','Autonomo']
   const dipendentiMap: Record<string, number> = {}
-  for (const lead of allLeadsRaw) {
+  for (const lead of baseLeads) {
     const key = lead.dipendenti ?? 'N/D'
     dipendentiMap[key] = (dipendentiMap[key] ?? 0) + 1
   }
@@ -138,9 +147,9 @@ export default async function DashboardPage({
     ...(dipendentiMap['N/D'] ? [{ range: 'N/D', count: dipendentiMap['N/D'] }] : []),
   ]
 
-  // Industry chart data (all leads, not date-filtered)
+  // Industry chart data
   const industryMap: Record<string, number> = {}
-  for (const lead of allLeadsRaw) {
+  for (const lead of baseLeads) {
     const key = lead.industry ?? 'N/D'
     industryMap[key] = (industryMap[key] ?? 0) + 1
   }
@@ -148,9 +157,14 @@ export default async function DashboardPage({
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  // Owner chart data (all leads)
+  // Filter options — always from full dataset so options don't disappear when filtering
+  const availableOwners = [...new Set(allLeadsRaw.map(l => l.owner).filter(Boolean))].sort() as string[]
+  const availableStages = [...new Set(allLeadsRaw.map(l => l.stadio_pipeline).filter(Boolean))].sort() as string[]
+  const availableOrigini = [...new Set(allLeadsRaw.map(l => l.origine).filter(Boolean))].sort() as string[]
+
+  // Owner chart data
   const ownerMap: Record<string, number> = {}
-  for (const lead of allLeadsRaw) {
+  for (const lead of baseLeads) {
     const key = lead.owner ?? 'N/D'
     ownerMap[key] = (ownerMap[key] ?? 0) + 1
   }
@@ -185,7 +199,11 @@ export default async function DashboardPage({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Suspense>
-          <DateFilter />
+          <DashboardFilters
+            owners={availableOwners}
+            stages={availableStages}
+            origini={availableOrigini}
+          />
         </Suspense>
       </div>
 
