@@ -127,10 +127,10 @@ export default async function DashboardPage({
     { name: 'N/D', value: allLeads.filter(l => l.hanno_sito === null).length },
   ].filter(d => d.value > 0)
 
-  // Dipendenti chart data — count by predefined range string
+  // Dipendenti chart data — count by predefined range string (all leads, not date-filtered)
   const dipendentiOrder = ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001-10000','10000+','Studente','Autonomo']
   const dipendentiMap: Record<string, number> = {}
-  for (const lead of allLeads) {
+  for (const lead of allLeadsRaw) {
     const key = lead.dipendenti ?? 'N/D'
     dipendentiMap[key] = (dipendentiMap[key] ?? 0) + 1
   }
@@ -139,9 +139,9 @@ export default async function DashboardPage({
     ...(dipendentiMap['N/D'] ? [{ range: 'N/D', count: dipendentiMap['N/D'] }] : []),
   ]
 
-  // Industry chart data
+  // Industry chart data (all leads, not date-filtered)
   const industryMap: Record<string, number> = {}
-  for (const lead of allLeads) {
+  for (const lead of allLeadsRaw) {
     const key = lead.industry ?? 'N/D'
     industryMap[key] = (industryMap[key] ?? 0) + 1
   }
