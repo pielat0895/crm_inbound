@@ -54,8 +54,10 @@ export function KanbanCard({ lead, threshold }: Props) {
         </p>
         <OverdueBadge giorni={lead.giorni_ultimo_contatto} threshold={threshold} />
       </div>
-      {lead.azienda && (
-        <p className="text-xs text-muted-foreground">{lead.azienda}</p>
+      {(lead.azienda || lead.dipendenti) && (
+        <p className="text-xs text-muted-foreground">
+          {lead.azienda}{lead.azienda && lead.dipendenti ? ' · ' : ''}{lead.dipendenti && `${lead.dipendenti} dip.`}
+        </p>
       )}
       {lead.note && (
         <p className="text-xs text-muted-foreground italic line-clamp-2 border-l-2 border-primary/30 pl-2">
