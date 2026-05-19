@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { OwnerChart } from '@/components/dashboard/OwnerChart'
 import { SitoChart } from '@/components/dashboard/SitoChart'
 import { DipendentiChart } from '@/components/dashboard/DipendentiChart'
 import { IndustryChart } from '@/components/dashboard/IndustryChart'
@@ -25,6 +26,7 @@ export type SlimLead = {
   dipendenti: string | null
   origine: string | null
   data_apertura: string | null
+  owner: string | null
 }
 
 type Props = {
@@ -34,6 +36,7 @@ type Props = {
   trendChartData: { label: string; count: number; media: number; month: string }[]
   pipelineData: { stage: string; count: number; revenue: number }[]
   conversionChartData: { origine: string; tassoVinti: number; tassoNonVinti: number; tasso: number }[]
+  ownerChartData: { name: string; value: number }[]
   leads: SlimLead[]
 }
 
@@ -50,6 +53,7 @@ export function ChartsSection({
   trendChartData,
   pipelineData,
   conversionChartData,
+  ownerChartData,
   leads,
 }: Props) {
   const [modal, setModal] = useState<ModalState>({ open: false, title: '', leads: [] })
@@ -80,6 +84,12 @@ export function ChartsSection({
     open(`Stadio: ${stage}`, leads.filter(l => l.stadio_pipeline === stage))
   }
 
+  function openOwner(name: string) {
+    open(`Owner: ${name}`, leads.filter(l =>
+      name === 'N/D' ? !l.owner : l.owner === name
+    ))
+  }
+
   function openConversion(origine: string) {
     open(`Origine: ${origine}`, leads.filter(l =>
       origine === 'N/D' ? !l.origine : l.origine === origine
@@ -102,6 +112,11 @@ export function ChartsSection({
           <h2 className="font-semibold mb-4">Conversione per origine</h2>
           <ConversionChart data={conversionChartData} onSegmentClick={openConversion} />
         </div>
+      </div>
+
+      <div className="rounded-lg border p-4">
+        <h2 className="font-semibold mb-4">Lead per owner</h2>
+        <OwnerChart data={ownerChartData} onSegmentClick={openOwner} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

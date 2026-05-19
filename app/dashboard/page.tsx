@@ -148,6 +148,16 @@ export default async function DashboardPage({
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
+  // Owner chart data (all leads)
+  const ownerMap: Record<string, number> = {}
+  for (const lead of allLeadsRaw) {
+    const key = lead.owner ?? 'N/D'
+    ownerMap[key] = (ownerMap[key] ?? 0) + 1
+  }
+  const ownerChartData = Object.entries(ownerMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+
   const slimLeads: SlimLead[] = allLeadsRaw.map(l => ({
     id: l.id,
     nome: l.nome,
@@ -159,6 +169,7 @@ export default async function DashboardPage({
     dipendenti: l.dipendenti,
     origine: l.origine,
     data_apertura: l.data_apertura,
+    owner: l.owner,
   }))
 
   const wonDealsSorted = wonLeads
@@ -194,6 +205,7 @@ export default async function DashboardPage({
         trendChartData={trendChartData}
         pipelineData={leadsByStage}
         conversionChartData={conversionChartData}
+        ownerChartData={ownerChartData}
         leads={slimLeads}
       />
 
