@@ -17,6 +17,28 @@ type Props = {
   hideNote?: boolean
 }
 
+function Field({
+  label, name, type = 'text', form, set,
+}: {
+  label: string
+  name: string
+  type?: string
+  form: Record<string, string>
+  set: (key: string, value: string) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={name}>{label}</Label>
+      <Input
+        id={name}
+        type={type}
+        value={form[name]}
+        onChange={e => set(name, e.target.value)}
+      />
+    </div>
+  )
+}
+
 export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: Props) {
   const router = useRouter()
   const isEdit = !!lead
@@ -114,20 +136,6 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
     }
   }
 
-  function Field({ label, name, type = 'text' }: { label: string; name: keyof typeof form; type?: string }) {
-    return (
-      <div className="space-y-1">
-        <Label htmlFor={name}>{label}</Label>
-        <Input
-          id={name}
-          type={type}
-          value={form[name]}
-          onChange={e => set(name, e.target.value)}
-        />
-      </div>
-    )
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -135,19 +143,19 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
       <section className="space-y-4">
         <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Identità</h2>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Nome" name="nome" />
-          <Field label="Cognome" name="cognome" />
-          <Field label="Azienda" name="azienda" />
-          <Field label="Email" name="email" type="email" />
-          <Field label="Telefono" name="tel" />
-          <Field label="Ruolo" name="ruolo" />
+          <Field label="Nome" name="nome" form={form} set={set} />
+          <Field label="Cognome" name="cognome" form={form} set={set} />
+          <Field label="Azienda" name="azienda" form={form} set={set} />
+          <Field label="Email" name="email" type="email" form={form} set={set} />
+          <Field label="Telefono" name="tel" form={form} set={set} />
+          <Field label="Ruolo" name="ruolo" form={form} set={set} />
         </div>
       </section>
 
       <section className="space-y-4">
         <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Qualificazione</h2>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Tipo" name="tipo" />
+          <Field label="Tipo" name="tipo" form={form} set={set} />
           <div className="space-y-1">
             <Label>Origine</Label>
             <Select value={form.origine ?? ''} onValueChange={v => set('origine', v ?? '')}>
@@ -175,7 +183,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
               </SelectContent>
             </Select>
           </div>
-          <Field label="Sito web aziendale" name="company_web" />
+          <Field label="Sito web aziendale" name="company_web" form={form} set={set} />
           <div className="space-y-1">
             <Label>Hanno sito</Label>
             <Select value={form.hanno_sito ?? ''} onValueChange={v => set('hanno_sito', v ?? '')}>
@@ -223,8 +231,8 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
               </SelectContent>
             </Select>
           </div>
-          <Field label="Stato" name="stato" />
-          <Field label="Motivo lost" name="motivo_lost" />
+          <Field label="Stato" name="stato" form={form} set={set} />
+          <Field label="Motivo lost" name="motivo_lost" form={form} set={set} />
           <div className="space-y-1">
             <Label htmlFor="valore">Valore (€)</Label>
             <Input
@@ -236,17 +244,17 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
               placeholder="es. 10000"
             />
           </div>
-          <Field label="Owner" name="owner" />
+          <Field label="Owner" name="owner" form={form} set={set} />
         </div>
       </section>
 
       <section className="space-y-4">
         <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Tempi</h2>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Data apertura" name="data_apertura" type="date" />
-          <Field label="Data chiusura" name="data_chiusura" type="date" />
-          <Field label="Appuntamento" name="appuntamento" type="datetime-local" />
-          <Field label="Ricontattare" name="ricontattare" type="date" />
+          <Field label="Data apertura" name="data_apertura" type="date" form={form} set={set} />
+          <Field label="Data chiusura" name="data_chiusura" type="date" form={form} set={set} />
+          <Field label="Appuntamento" name="appuntamento" type="datetime-local" form={form} set={set} />
+          <Field label="Ricontattare" name="ricontattare" type="date" form={form} set={set} />
           <div className="space-y-1">
             <Label>Contattato</Label>
             <Select value={form.contattato} onValueChange={v => set('contattato', v ?? 'false')}>
@@ -266,7 +274,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
           <Badge variant="outline" className="ml-2 text-xs font-normal normal-case">Parzialmente sincronizzato da n8n</Badge>
         </h2>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Numero messaggi" name="numero_messaggi" type="number" />
+          <Field label="Numero messaggi" name="numero_messaggi" type="number" form={form} set={set} />
           {isEdit && (
             <>
               <div className="space-y-1">
