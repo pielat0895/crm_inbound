@@ -66,7 +66,10 @@ export default async function DashboardPage({
   const allLeads = baseLeads.filter(l => filterByDate(l, l.data_apertura))
   // openLeads uses baseLeads (owner/stadio/origine filtered) but ignores date
   const openLeads = baseLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
-  const wonLeads = allLeads.filter(l => l.stadio_pipeline === 'Chiuso (Vinto)')
+  // Won leads filtered by close date, not open date
+  const wonLeads = baseLeads.filter(l =>
+    l.stadio_pipeline === 'Chiuso (Vinto)' && filterByDate(l, l.data_chiusura)
+  )
 
   const conversionRate = allLeads.length > 0
     ? Math.round((wonLeads.length / allLeads.length) * 100)
