@@ -1,11 +1,17 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import type { LeadWithComputed } from '@/types'
 import { OverdueBadge } from '@/components/ui/OverdueBadge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SortableHeader } from './SortableHeader'
-import { ChevronLeft, ChevronRight, Users, SearchX } from 'lucide-react'
+import { LeadEditDrawer } from './LeadEditDrawer'
+import {
+  Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog'
+import { ChevronLeft, ChevronRight, Users, SearchX, Pencil, Trash2 } from 'lucide-react'
 
 const STAGE_COLORS: Record<string, string> = {
   'Lead In':        'bg-blue-100 text-blue-700',
@@ -32,6 +38,25 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
   const router = useRouter()
   const totalPages = Math.ceil(total / pageSize)
 
+  const [rows, setRows] = useState(leads)
+  const [editingLead, setEditingLead] = useState<LeadWithComputed | null>(null)
+  const [deletingLead, setDeletingLead] = useState<LeadWithComputed | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => { setRows(leads) }, [leads])
+
+  async function handleDelete() {
+    if (!deletingLead) return
+    setDeleting(true)
+    const res = await fetch(`/api/leads/${deletingLead.id}`, { method: 'DELETE' })
+    setDeleting(false)
+    if (!res.ok) { toast.error('Errore durante l\'eliminazione'); return }
+    toast.success('Lead eliminato')
+    setRows(prev => prev.filter(l => l.id !== deletingLead.id))
+    setDeletingLead(null)
+    router.refresh()
+  }
+
   function goPage(p: number) {
     const url = new URL(window.location.href)
     url.searchParams.set('page', String(p))
@@ -51,10 +76,11 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
               <th className="px-4 py-2 text-left"><SortableHeader label="Ultimo contatto" column="data_ultimo_contatto" currentSort={sortBy} currentDir={sortDir} /></th>
               <th className="px-4 py-2 text-left font-medium">Follow-up</th>
               <th className="px-4 py-2 text-left"><SortableHeader label="Valore" column="valore" currentSort={sortBy} currentDir={sortDir} /></th>
+              <th className="px-4 py-2 text-right font-medium">Azioni</th>
             </tr>
           </thead>
           <tbody>
-            {leads.map(lead => (
+            {rows.map(lead => (
               <tr
                 key={lead.id}
                 className="border-b cursor-pointer hover:bg-muted/30 transition-colors"
@@ -79,11 +105,32 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
                 <td className="px-4 py-2">
                   {lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}
                 </td>
+                <td className="px-4 py-2">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Modifica lead"
+                      onClick={(e) => { e.stopPropagation(); setEditingLead(lead) }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:text-destructive"
+                      aria-label="Elimina lead"
+                      onClick={(e) => { e.stopPropagation(); setDeletingLead(lead) }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </td>
               </tr>
             ))}
-            {leads.length === 0 && (
+            {rows.length === 0 && (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <EmptyState
                     icon={hasFilters ? SearchX : Users}
                     title={hasFilters ? 'Nessun risultato' : 'Nessun lead ancora'}
@@ -111,6 +158,36 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
           </div>
         )}
       </div>
+
+      <LeadEditDrawer
+        lead={editingLead}
+        open={!!editingLead}
+        onClose={() => setEditingLead(null)}
+        onSaved={() => { setEditingLead(null); router.refresh() }}
+      />
+
+      <Dialog open={!!deletingLead} onOpenChange={(o) => { if (!o) setDeletingLead(null) }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Eliminare lead?</DialogTitle>
+            <DialogDescription>
+              {deletingLead
+                ? (`${deletingLead.nome ?? ''} ${deletingLead.cognome ?? ''}`.trim()
+                    || deletingLead.azienda || 'Questo lead')
+                : ''}{' '}
+              verrà eliminato definitivamente. L&apos;azione non è reversibile.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingLead(null)} disabled={deleting}>
+              Annulla
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Eliminazione...' : 'Elimina'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
