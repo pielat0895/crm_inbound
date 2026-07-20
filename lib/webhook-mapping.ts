@@ -21,6 +21,7 @@ const INBOUND_FIELD_MAP: Record<string, string> = {
   stadio_pipeline: 'stadio_pipeline',
   stato_lead: 'stato_lead',
   valore: 'valore',
+  data_chiusura: 'data_chiusura',
   owner: 'owner',
   note: 'note',
 }
