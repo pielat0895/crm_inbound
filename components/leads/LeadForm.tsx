@@ -15,6 +15,8 @@ type Props = {
   lead?: LeadWithComputed
   stages?: string[]
   hideNote?: boolean
+  onSaved?: () => void
+  onCancel?: () => void
 }
 
 function Field({
@@ -39,7 +41,7 @@ function Field({
   )
 }
 
-export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: Props) {
+export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onSaved, onCancel }: Props) {
   const router = useRouter()
   const isEdit = !!lead
 
@@ -129,7 +131,9 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
     const saved = await res.json()
     toast.success(isEdit ? 'Modifiche salvate' : 'Lead creato')
     setLoading(false)
-    if (isEdit) {
+    if (onSaved) {
+      onSaved()
+    } else if (isEdit) {
       router.refresh()
     } else {
       router.push(`/leads/${saved.id}`)
@@ -314,7 +318,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote }: P
         <Button type="submit" disabled={loading}>
           {loading ? 'Salvataggio...' : isEdit ? 'Salva modifiche' : 'Crea lead'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        <Button type="button" variant="outline" onClick={() => (onCancel ? onCancel() : router.back())}>
           Annulla
         </Button>
       </div>
