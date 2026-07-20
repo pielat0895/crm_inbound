@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { computeLeadFields } from '@/types'
+import { sanitizeSearchTerm } from '@/lib/search'
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadFilters } from '@/components/leads/LeadFilters'
 import { LeadQuickStats } from '@/components/leads/LeadQuickStats'
@@ -28,8 +29,9 @@ export default async function LeadsPage({
 
   let query = supabase.from('leads').select('*', { count: 'exact' })
 
-  if (sp.q) {
-    query = query.or(`nome.ilike.%${sp.q}%,cognome.ilike.%${sp.q}%,azienda.ilike.%${sp.q}%,email.ilike.%${sp.q}%`)
+  const q = sanitizeSearchTerm(sp.q)
+  if (q) {
+    query = query.or(`nome.ilike.%${q}%,cognome.ilike.%${q}%,azienda.ilike.%${q}%,email.ilike.%${q}%`)
   }
   if (sp.stadio && sp.stadio !== 'all') {
     query = query.eq('stadio_pipeline', sp.stadio)
