@@ -47,7 +47,11 @@ export default function SettingsPage() {
 
   async function handleReset() {
     setResetting(true)
-    const res = await fetch('/api/admin/reset-db', { method: 'DELETE' })
+    const res = await fetch('/api/admin/reset-db', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: 'RESET' }),
+    })
     if (res.ok) {
       setResetDone(true)
       setConfirmReset(false)

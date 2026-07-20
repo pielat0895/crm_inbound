@@ -7,7 +7,16 @@ export async function verifyPassword(input: string): Promise<boolean> {
   return bcrypt.compare(input, hash)
 }
 
+// Confronto constant-time in JS puro (verifyAuthToken gira su Edge runtime nel
+// proxy/middleware, dove node:crypto non è disponibile). Evita timing attack sul
+// token statico: itera sempre su tutta la lunghezza, senza early-return sul primo
+// byte diverso.
 export function verifyAuthToken(token: string | undefined): boolean {
-  if (!token) return false
-  return token === process.env.AUTH_SECRET
+  const secret = process.env.AUTH_SECRET
+  if (!token || !secret || token.length !== secret.length) return false
+  let mismatch = 0
+  for (let i = 0; i < token.length; i++) {
+    mismatch |= token.charCodeAt(i) ^ secret.charCodeAt(i)
+  }
+  return mismatch === 0
 }

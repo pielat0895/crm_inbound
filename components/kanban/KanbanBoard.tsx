@@ -8,7 +8,6 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 import { KanbanCard } from './KanbanCard'
 import type { LeadWithComputed } from '@/types'
-import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Search, Inbox } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -65,17 +64,21 @@ export function KanbanBoard({ initialLeads, stages, threshold }: Props) {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
+  // Polling: RLS deny-all ha rimosso l'accesso realtime del client anon
   useEffect(() => {
-    const supabase = createClient()
-    const channel = supabase
-      .channel('leads-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, async () => {
-        const res = await fetch('/api/leads')
-        const updated: LeadWithComputed[] = await res.json()
-        setLeads(updated)
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    const refetch = async () => {
+      if (document.hidden) return
+      const res = await fetch('/api/leads')
+      if (!res.ok) return
+      const updated: LeadWithComputed[] = await res.json()
+      setLeads(updated)
+    }
+    const interval = setInterval(refetch, 30_000)
+    window.addEventListener('focus', refetch)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', refetch)
+    }
   }, [])
 
   const handleDragStart = useCallback((event: DragStartEvent) => {

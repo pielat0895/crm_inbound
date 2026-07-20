@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { computeLeadFields } from '@/types'
+import { pickLeadFields } from '@/lib/lead-fields'
+import { sanitizeSearchTerm } from '@/lib/search'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const stage = searchParams.get('stage')
   const origine = searchParams.get('origine')
-  const q = searchParams.get('q')
+  const q = sanitizeSearchTerm(searchParams.get('q'))
 
   const supabase = createServiceClient()
   let query = supabase.from('leads').select('*').order('created_at', { ascending: false })
@@ -22,7 +24,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
+  const body = pickLeadFields(await request.json())
 
   if (!body.email) {
     return NextResponse.json({ error: 'Email required' }, { status: 400 })

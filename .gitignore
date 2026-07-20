@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 scripts/leads-export.csv
+
+# debug tools (possono contenere riferimenti a dati)
+check_schema.mjs

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { computeLeadFields } from '@/types'
+import { pickLeadFields } from '@/lib/lead-fields'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -14,7 +15,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const body = await request.json()
+  const body = pickLeadFields(await request.json())
+  if (Object.keys(body).length === 0) {
+    return NextResponse.json({ error: 'No valid fields' }, { status: 400 })
+  }
   const supabase = createServiceClient()
 
   const { data, error } = await supabase
