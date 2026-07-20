@@ -43,3 +43,8 @@ scripts/leads-export.csv
 
 # debug tools (possono contenere riferimenti a dati)
 check_schema.mjs
+
+# tooling / generati (agent config, output graphify)
+.claude/
+.superpowers/
+graphify-out/
