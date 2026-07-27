@@ -71,6 +71,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
     ricontattare: lead?.ricontattare ?? '',
     numero_messaggi: lead?.numero_messaggi?.toString() ?? '0',
     data_chiusura: lead?.data_chiusura ?? '',
+    data_chiusura_prevista: lead?.data_chiusura_prevista ?? '',
     contattato: lead?.contattato ? 'true' : 'false',
     note: lead?.note ?? '',
   })
@@ -257,6 +258,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
         <div className="grid grid-cols-2 gap-4">
           <Field label="Data apertura" name="data_apertura" type="date" form={form} set={set} />
           <Field label="Data chiusura" name="data_chiusura" type="date" form={form} set={set} />
+          <Field label="Chiusura prevista" name="data_chiusura_prevista" type="date" form={form} set={set} />
           <Field label="Appuntamento" name="appuntamento" type="datetime-local" form={form} set={set} />
           <Field label="Ricontattare" name="ricontattare" type="date" form={form} set={set} />
           <div className="space-y-1">

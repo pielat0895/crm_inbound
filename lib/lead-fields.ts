@@ -27,6 +27,7 @@ export const WRITABLE_LEAD_FIELDS = [
   'ricontattare',
   'data_ultimo_contatto',
   'data_chiusura',
+  'data_chiusura_prevista',
   'contattato',
   'numero_messaggi',
   'risposto_ultima_mail',
