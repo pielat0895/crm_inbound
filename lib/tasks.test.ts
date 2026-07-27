@@ -262,9 +262,29 @@ describe('buildDormienti', () => {
     expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
   })
 
-  it('excludes leads never contacted', () => {
-    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: null })]
+  it('includes never-contacted leads, counting from data_apertura', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: null, data_apertura: '2026-05-16' })] // 72 giorni
+    const items = buildDormienti(leads, [], REF, 21, new Set(), new Set())
+    expect(items.map(i => i.leadId)).toEqual(['l-1'])
+    expect(items[0].giorniSilenzio).toBe(72)
+    expect(items[0].maiContattato).toBe(true)
+  })
+
+  it('falls back to created_at when a never-contacted lead has no data_apertura', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: null, data_apertura: null, created_at: '2026-06-27T09:00:00Z' })]
+    const items = buildDormienti(leads, [], REF, 21, new Set(), new Set())
+    expect(items[0].giorniSilenzio).toBe(30)
+  })
+
+  it('excludes a never-contacted lead that is still recent', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: null, data_apertura: '2026-07-25' })] // 2 giorni
     expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
+  })
+
+  it('marks contacted dormant leads as not maiContattato', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: '2026-06-01' })]
+    const items = buildDormienti(leads, [], REF, 21, new Set(), new Set())
+    expect(items[0].maiContattato).toBe(false)
   })
 
   it('excludes leads with an open task', () => {

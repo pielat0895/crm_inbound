@@ -46,6 +46,8 @@ export type FeedItem = {
   valore: number | null
   closingSoon: boolean
   giorniSilenzio: number | null
+  /** Solo per i dormienti: il lead non è mai stato contattato. */
+  maiContattato?: boolean
 }
 
 /** "Mario Rossi · ACME", saltando i pezzi mancanti. */
@@ -209,7 +211,28 @@ export function buildProssimiChiusura(
   })
 }
 
-/** Sezione "Dormienti": lead in silenzio da troppo tempo e senza nulla di pianificato. */
+/**
+ * Da quanti giorni il lead è fermo. Se non è mai stato contattato il conteggio
+ * parte dalla data di apertura (o dalla creazione): un lead entrato due mesi fa
+ * e mai lavorato è fermo da due mesi, non "senza dati".
+ */
+export function giorniFermo(
+  lead: LeadWithComputed,
+  now: Date,
+): { giorni: number | null; riferimento: string | null; maiContattato: boolean } {
+  if (lead.giorni_ultimo_contatto !== null) {
+    return { giorni: lead.giorni_ultimo_contatto, riferimento: lead.data_ultimo_contatto, maiContattato: false }
+  }
+
+  const riferimento = lead.data_apertura ?? lead.created_at?.slice(0, 10) ?? null
+  if (!riferimento) return { giorni: null, riferimento: null, maiContattato: true }
+
+  const today = parseLocalDate(toDateString(now))
+  const giorni = Math.floor((today.getTime() - parseLocalDate(riferimento).getTime()) / 86400000)
+  return { giorni, riferimento, maiContattato: true }
+}
+
+/** Sezione "Dormienti": lead fermi da troppo tempo e senza nulla di pianificato. */
 export function buildDormienti(
   leads: LeadWithComputed[],
   tasks: Task[],
@@ -226,20 +249,23 @@ export function buildDormienti(
     if (!isActiveLead(lead) || used.has(lead.id)) continue
     if (leadsWithOpenTask.has(lead.id)) continue
     if (lead.ricontattare && lead.ricontattare > today) continue
-    if (lead.giorni_ultimo_contatto === null || lead.giorni_ultimo_contatto < dormantDays) continue
+
+    const fermo = giorniFermo(lead, now)
+    if (fermo.giorni === null || fermo.giorni < dormantDays) continue
 
     items.push({
       key: `dormiente:${lead.id}`,
       kind: 'dormiente',
       titolo: leadLabel(lead),
-      date: lead.data_ultimo_contatto,
+      date: fermo.riferimento,
       priorita: null,
       taskId: null,
       leadId: lead.id,
       leadLabel: leadLabel(lead),
       valore: lead.valore,
       closingSoon: closingLeadIds.has(lead.id),
-      giorniSilenzio: lead.giorni_ultimo_contatto,
+      giorniSilenzio: fermo.giorni,
+      maiContattato: fermo.maiContattato,
     })
     used.add(lead.id)
   }

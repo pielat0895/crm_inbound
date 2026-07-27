@@ -53,7 +53,11 @@ export function TaskRow({ item, today, onDone, onSnooze, onDelete }: Props) {
           </Link>
         )}
         {item.kind === 'dormiente' && (
-          <span className="text-xs text-muted-foreground">{item.giorniSilenzio}g di silenzio</span>
+          <span className="text-xs text-muted-foreground">
+            {item.maiContattato
+              ? `mai contattato · in attesa da ${item.giorniSilenzio}g`
+              : `${item.giorniSilenzio}g di silenzio`}
+          </span>
         )}
       </div>
 
