@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo } from './tasks'
+import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo, buildProssimiChiusura, buildDormienti } from './tasks'
 import type { Lead, LeadWithComputed, Task } from '@/types'
 import { computeLeadFields } from '@/types'
 
@@ -192,5 +192,99 @@ describe('buildInArrivo', () => {
   it('skips leads already used by an earlier section', () => {
     const leads = [makeLead({ id: 'l-1', ricontattare: '2026-07-30' })]
     expect(buildInArrivo(leads, [], REF, 7, new Set(), new Set(['l-1']))).toEqual([])
+  })
+})
+
+const STAGES = ['Lead In', 'Discovery', 'Proposal Sent', 'Chiuso (Vinto)', 'Chiuso (Perso)', 'Cliente', 'Studente']
+
+describe('buildProssimiChiusura', () => {
+  it('includes leads with a forecast date inside the window', () => {
+    const leads = [
+      makeLead({ id: 'l-in', data_chiusura_prevista: '2026-08-10' }),
+      makeLead({ id: 'l-out', data_chiusura_prevista: '2026-10-01' }),
+    ]
+    const items = buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set())
+    expect(items.map(i => i.leadId)).toEqual(['l-in'])
+    expect(items[0].stimato).toBe(false)
+  })
+
+  it('falls back to advanced stage with recent activity, flagged as stimato', () => {
+    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Proposal Sent', data_ultimo_contatto: '2026-07-25' })]
+    const items = buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set())
+    expect(items).toHaveLength(1)
+    expect(items[0].stimato).toBe(true)
+  })
+
+  it('excludes an advanced-stage lead gone silent past the follow-up threshold', () => {
+    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Proposal Sent', data_ultimo_contatto: '2026-07-01' })]
+    expect(buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set())).toEqual([])
+  })
+
+  it('excludes early stages without a forecast date', () => {
+    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Discovery', data_ultimo_contatto: '2026-07-26' })]
+    expect(buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set())).toEqual([])
+  })
+
+  it('sorts dated leads by date, then stimato ones by value desc', () => {
+    const leads = [
+      makeLead({ id: 'l-est-small', stadio_pipeline: 'Proposal Sent', data_ultimo_contatto: '2026-07-26', valore: 1000 }),
+      makeLead({ id: 'l-est-big', stadio_pipeline: 'Proposal Sent', data_ultimo_contatto: '2026-07-26', valore: 9000 }),
+      makeLead({ id: 'l-dated', data_chiusura_prevista: '2026-08-15' }),
+    ]
+    const items = buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set())
+    expect(items.map(i => i.leadId)).toEqual(['l-dated', 'l-est-big', 'l-est-small'])
+  })
+
+  it('skips leads already used by earlier sections', () => {
+    const leads = [makeLead({ id: 'l-1', data_chiusura_prevista: '2026-08-01' })]
+    expect(buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set(['l-1']))).toEqual([])
+  })
+
+  it('excludes leads in excluded stages even with a forecast date', () => {
+    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Chiuso (Vinto)', data_chiusura_prevista: '2026-08-01' })]
+    expect(buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set())).toEqual([])
+  })
+})
+
+describe('buildDormienti', () => {
+  it('includes leads silent for at least the threshold, longest silence first', () => {
+    const leads = [
+      makeLead({ id: 'l-30', data_ultimo_contatto: '2026-06-27' }), // 30 giorni
+      makeLead({ id: 'l-21', data_ultimo_contatto: '2026-07-06' }), // 21 giorni
+    ]
+    const items = buildDormienti(leads, [], REF, 21, new Set(), new Set())
+    expect(items.map(i => i.leadId)).toEqual(['l-30', 'l-21'])
+    expect(items[0].giorniSilenzio).toBe(30)
+  })
+
+  it('excludes leads under the threshold', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: '2026-07-20' })] // 7 giorni
+    expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
+  })
+
+  it('excludes leads never contacted', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: null })]
+    expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
+  })
+
+  it('excludes leads with an open task', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: '2026-06-01' })]
+    const tasks = [makeTask({ lead_id: 'l-1', due_date: '2026-09-01' })]
+    expect(buildDormienti(leads, tasks, REF, 21, new Set(), new Set())).toEqual([])
+  })
+
+  it('excludes leads with a future recontact date', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: '2026-06-01', ricontattare: '2026-09-01' })]
+    expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
+  })
+
+  it('excludes leads already used by earlier sections', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: '2026-06-01' })]
+    expect(buildDormienti(leads, [], REF, 21, new Set(), new Set(['l-1']))).toEqual([])
+  })
+
+  it('excludes closed and client stages', () => {
+    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Cliente', data_ultimo_contatto: '2026-01-01' })]
+    expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
   })
 })

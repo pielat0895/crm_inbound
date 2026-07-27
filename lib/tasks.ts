@@ -143,6 +143,72 @@ export function buildDaFareOra(
   return items.sort(byDateThenPriority)
 }
 
+export type ClosingItem = {
+  leadId: string
+  leadLabel: string
+  valore: number | null
+  stadio: string
+  dataPrevista: string | null
+  stimato: boolean
+  giorniUltimoContatto: number | null
+}
+
+/** True se il lead è candidato a chiudersi: data prevista in finestra, o stadio avanzato ancora caldo. */
+export function isClosingSoon(
+  lead: LeadWithComputed,
+  now: Date,
+  closingDays: number,
+  pipelineStages: string[],
+  followupThresholdDays: number,
+): boolean {
+  if (!isActiveLead(lead)) return false
+  const today = toDateString(now)
+  const limit = addDays(today, closingDays)
+
+  if (lead.data_chiusura_prevista) {
+    return lead.data_chiusura_prevista <= limit
+  }
+
+  if (!advancedStages(pipelineStages).includes(lead.stadio_pipeline)) return false
+  return lead.giorni_ultimo_contatto !== null && lead.giorni_ultimo_contatto < followupThresholdDays
+}
+
+/** Sezione "Prossimi a chiusura": card di rischio, non checkbox. */
+export function buildProssimiChiusura(
+  leads: LeadWithComputed[],
+  now: Date,
+  closingDays: number,
+  pipelineStages: string[],
+  followupThresholdDays: number,
+  used: Set<string>,
+): ClosingItem[] {
+  const items: ClosingItem[] = []
+
+  for (const lead of leads) {
+    if (used.has(lead.id)) continue
+    if (!isClosingSoon(lead, now, closingDays, pipelineStages, followupThresholdDays)) continue
+
+    items.push({
+      leadId: lead.id,
+      leadLabel: leadLabel(lead),
+      valore: lead.valore,
+      stadio: lead.stadio_pipeline,
+      dataPrevista: lead.data_chiusura_prevista,
+      stimato: !lead.data_chiusura_prevista,
+      giorniUltimoContatto: lead.giorni_ultimo_contatto,
+    })
+    used.add(lead.id)
+  }
+
+  return items.sort((a, b) => {
+    if (a.stimato !== b.stimato) return a.stimato ? 1 : -1
+    if (!a.stimato && !b.stimato) {
+      return (a.dataPrevista ?? '') < (b.dataPrevista ?? '') ? -1 : 1
+    }
+    return (b.valore ?? 0) - (a.valore ?? 0)
+  })
+}
+
 /**
  * Sezione "In arrivo": task e scadenze nella finestra (oggi, oggi+upcomingDays].
  * I task senza due_date finiscono in coda (byDateThenPriority li ordina per ultimo).
