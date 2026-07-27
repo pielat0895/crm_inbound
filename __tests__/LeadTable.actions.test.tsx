@@ -17,7 +17,7 @@ const mockLead: LeadWithComputed = {
   esperienza_us: null, stadio_pipeline: 'Lead In', stato_lead: null,
   stato: null, motivo_lost: null, valore: 1000, owner: null,
   data_apertura: null, appuntamento: null, ricontattare: null,
-  data_ultimo_contatto: null, data_chiusura: null, contattato: false,
+  data_ultimo_contatto: null, data_chiusura: null, data_chiusura_prevista: null, contattato: false,
   numero_messaggi: 0, risposto_ultima_mail: false, touchpoints: 0,
   note: null,
   giorni_ultimo_contatto: null, giorni_aperto: null, giorni_pipeline: null,
