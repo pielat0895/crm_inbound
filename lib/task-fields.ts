@@ -28,7 +28,9 @@ export function validateTaskInput(body: Record<string, unknown>): string | null 
   if (body.titolo !== undefined) {
     if (typeof body.titolo !== 'string' || body.titolo.trim() === '') return 'titolo obbligatorio'
   }
-  if (body.priorita !== undefined && body.priorita !== null) {
+  // priorita è NOT NULL a DB: un null esplicito va respinto qui con un 400,
+  // altrimenti passerebbe e fallirebbe come 500 sul constraint.
+  if (body.priorita !== undefined) {
     if (!TASK_PRIORITIES.includes(body.priorita as never)) return 'priorita non valida'
   }
   if (body.due_date !== undefined && body.due_date !== null) {

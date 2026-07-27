@@ -34,6 +34,10 @@ describe('validateTaskInput', () => {
     }
   })
 
+  it('rejects an explicit null priority (column is NOT NULL)', () => {
+    expect(validateTaskInput({ titolo: 'X', priorita: null })).toBe('priorita non valida')
+  })
+
   it('rejects a malformed due_date', () => {
     expect(validateTaskInput({ titolo: 'X', due_date: '01/08/2026' })).toBe('due_date non valida')
   })
