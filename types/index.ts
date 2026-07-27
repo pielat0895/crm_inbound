@@ -26,6 +26,7 @@ export type Lead = {
   ricontattare: string | null
   data_ultimo_contatto: string | null
   data_chiusura: string | null
+  data_chiusura_prevista: string | null
   contattato: boolean
   numero_messaggi: number
   risposto_ultima_mail: boolean
@@ -47,6 +48,23 @@ export type Interaction = {
   contenuto: string
 }
 
+export type TaskPriority = 'alta' | 'media' | 'bassa'
+
+export type Task = {
+  id: string
+  created_at: string
+  titolo: string
+  note: string | null
+  due_date: string | null
+  lead_id: string | null
+  priorita: TaskPriority
+  done: boolean
+  done_at: string | null
+  owner: string | null
+}
+
+export const TASK_PRIORITIES: TaskPriority[] = ['alta', 'media', 'bassa']
+
 export type Settings = {
   followup_threshold_days: number
   pipeline_stages: string[]
@@ -63,6 +81,10 @@ export const DEFAULT_PIPELINE_STAGES = [
 ]
 
 export const CLOSED_STAGES = ['Chiuso (Vinto)', 'Chiuso (Perso)']
+
+// Stadi che non rappresentano un deal in corso: esclusi dal task feed.
+// 'Cliente' e 'Studente' non sono chiusure, ma non c'è nulla da lavorare.
+export const ACTIVE_STAGE_EXCLUSIONS = [...CLOSED_STAGES, 'Cliente', 'Studente']
 
 export const DIPENDENTI_OPTIONS = [
   '1-10',
@@ -115,7 +137,7 @@ export const ESPERIENZA_US_OPTIONS = [
   'Studente/Università',
 ]
 
-function parseLocalDate(dateStr: string): Date {
+export function parseLocalDate(dateStr: string): Date {
   const [year, month, day] = dateStr.split('T')[0].split('-').map(Number)
   const d = new Date(year, month - 1, day)
   d.setHours(0, 0, 0, 0)

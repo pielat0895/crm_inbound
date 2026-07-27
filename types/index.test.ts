@@ -9,7 +9,7 @@ const baseLead: Lead = {
   dipendenti: null, hanno_sito: null, company_web: null, esperienza_us: null,
   stadio_pipeline: 'Nuovo', stato_lead: null, stato: null, motivo_lost: null,
   valore: null, owner: null, data_apertura: null, appuntamento: null,
-  ricontattare: null, data_ultimo_contatto: null, data_chiusura: null,
+  ricontattare: null, data_ultimo_contatto: null, data_chiusura: null, data_chiusura_prevista: null,
   contattato: false, numero_messaggi: 0, risposto_ultima_mail: false, touchpoints: 0, note: null,
 }
 
