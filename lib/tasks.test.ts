@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo, buildProssimiChiusura, buildDormienti } from './tasks'
-import type { Lead, LeadWithComputed, Task } from '@/types'
+import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo, buildProssimiChiusura, buildDormienti, buildTaskFeed } from './tasks'
+import type { Lead, LeadWithComputed, Task, Settings } from '@/types'
 import { computeLeadFields } from '@/types'
 
 export const REF = new Date(2026, 6, 27) // lunedì 27 luglio 2026, mezzanotte locale
@@ -286,5 +286,70 @@ describe('buildDormienti', () => {
   it('excludes closed and client stages', () => {
     const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Cliente', data_ultimo_contatto: '2026-01-01' })]
     expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
+  })
+})
+
+const SETTINGS: Settings = { followup_threshold_days: 7, pipeline_stages: STAGES }
+const FILTERS = { upcomingDays: 7, closingDays: 30, dormantDays: 21, owner: null }
+
+describe('buildTaskFeed', () => {
+  it('returns the four sections', () => {
+    const feed = buildTaskFeed([], [], SETTINGS, FILTERS, REF)
+    expect(feed).toEqual({ daFareOra: [], inArrivo: [], prossimiChiusura: [], dormienti: [] })
+  })
+
+  it('never repeats a lead across sections — earliest section wins', () => {
+    const lead = makeLead({
+      id: 'l-1',
+      stadio_pipeline: 'Proposal Sent',
+      ricontattare: '2026-07-27',
+      data_ultimo_contatto: '2026-05-01',
+      data_chiusura_prevista: '2026-08-05',
+    })
+    const feed = buildTaskFeed([lead], [], SETTINGS, FILTERS, REF)
+    expect(feed.daFareOra.map(i => i.leadId)).toEqual(['l-1'])
+    expect(feed.inArrivo).toEqual([])
+    expect(feed.prossimiChiusura).toEqual([])
+    expect(feed.dormienti).toEqual([])
+  })
+
+  it('keeps the closing badge on the surviving row', () => {
+    const lead = makeLead({ id: 'l-1', ricontattare: '2026-07-27', data_chiusura_prevista: '2026-08-05', valore: 12000 })
+    const feed = buildTaskFeed([lead], [], SETTINGS, FILTERS, REF)
+    expect(feed.daFareOra[0].closingSoon).toBe(true)
+  })
+
+  it('keeps multiple manual tasks on the same lead as distinct rows', () => {
+    const lead = makeLead({ id: 'l-1' })
+    const tasks = [
+      makeTask({ id: 't-1', lead_id: 'l-1', due_date: '2026-07-27', titolo: 'Chiamare' }),
+      makeTask({ id: 't-2', lead_id: 'l-1', due_date: '2026-07-27', titolo: 'Mandare proposta' }),
+    ]
+    const feed = buildTaskFeed([lead], tasks, SETTINGS, FILTERS, REF)
+    expect(feed.daFareOra).toHaveLength(2)
+  })
+
+  it('drops done tasks', () => {
+    const tasks = [makeTask({ id: 't-1', due_date: '2026-07-27', done: true })]
+    expect(buildTaskFeed([], tasks, SETTINGS, FILTERS, REF).daFareOra).toEqual([])
+  })
+
+  it('filters leads and tasks by owner', () => {
+    const leads = [
+      makeLead({ id: 'l-mine', owner: 'Pietro', ricontattare: '2026-07-27' }),
+      makeLead({ id: 'l-other', owner: 'Anna', ricontattare: '2026-07-27' }),
+    ]
+    const tasks = [
+      makeTask({ id: 't-mine', owner: 'Pietro', due_date: '2026-07-27' }),
+      makeTask({ id: 't-other', owner: 'Anna', due_date: '2026-07-27' }),
+    ]
+    const feed = buildTaskFeed(leads, tasks, SETTINGS, { ...FILTERS, owner: 'Pietro' }, REF)
+    expect(feed.daFareOra.map(i => i.key).sort()).toEqual(['ricontatto:l-mine', 'task:t-mine'])
+  })
+
+  it('defaults dormantDays to the follow-up threshold when not provided', () => {
+    const lead = makeLead({ id: 'l-1', data_ultimo_contatto: '2026-07-10' }) // 17 giorni
+    const feed = buildTaskFeed([lead], [], SETTINGS, { ...FILTERS, dormantDays: SETTINGS.followup_threshold_days }, REF)
+    expect(feed.dormienti.map(i => i.leadId)).toEqual(['l-1'])
   })
 })

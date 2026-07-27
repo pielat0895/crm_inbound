@@ -1,5 +1,5 @@
 import { ACTIVE_STAGE_EXCLUSIONS, parseLocalDate } from '@/types'
-import type { LeadWithComputed, Task, TaskPriority } from '@/types'
+import type { LeadWithComputed, Task, TaskPriority, Settings } from '@/types'
 
 /** Data locale in formato YYYY-MM-DD (no UTC: evita lo shift di fuso). */
 export function toDateString(d: Date): string {
@@ -312,4 +312,53 @@ export function buildInArrivo(
   }
 
   return items.sort(byDateThenPriority)
+}
+
+export type TaskFeedFilters = {
+  upcomingDays: number
+  closingDays: number
+  dormantDays: number
+  owner: string | null
+}
+
+export type TaskFeed = {
+  daFareOra: FeedItem[]
+  inArrivo: FeedItem[]
+  prossimiChiusura: ClosingItem[]
+  dormienti: FeedItem[]
+}
+
+/**
+ * Compone le quattro sezioni. Un lead compare in una sola sezione: `used` è
+ * condiviso e la precedenza è l'ordine di chiamata
+ * (da fare ora > in arrivo > prossimi a chiusura > dormienti).
+ * Eccezione voluta: più task manuali sullo stesso lead restano righe distinte.
+ */
+export function buildTaskFeed(
+  allLeads: LeadWithComputed[],
+  allTasks: Task[],
+  settings: Settings,
+  filters: TaskFeedFilters,
+  now: Date = new Date(),
+): TaskFeed {
+  const leads = allLeads.filter(l => !filters.owner || l.owner === filters.owner)
+  const tasks = allTasks.filter(t => !t.done && (!filters.owner || t.owner === filters.owner))
+
+  // Precalcolato: serve come badge nelle sezioni che precedono "prossimi a chiusura".
+  const closingLeadIds = new Set(
+    leads
+      .filter(l => isClosingSoon(l, now, filters.closingDays, settings.pipeline_stages, settings.followup_threshold_days))
+      .map(l => l.id)
+  )
+
+  const used = new Set<string>()
+
+  return {
+    daFareOra: buildDaFareOra(leads, tasks, now, closingLeadIds, used),
+    inArrivo: buildInArrivo(leads, tasks, now, filters.upcomingDays, closingLeadIds, used),
+    prossimiChiusura: buildProssimiChiusura(
+      leads, now, filters.closingDays, settings.pipeline_stages, settings.followup_threshold_days, used,
+    ),
+    dormienti: buildDormienti(leads, tasks, now, filters.dormantDays, closingLeadIds, used),
+  }
 }
