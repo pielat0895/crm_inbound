@@ -200,6 +200,7 @@ Campo aggiunto su `leads`: `data_chiusura_prevista` (previsione, distinta da `da
 |-----------|--------|
 | `proxy.ts` non `middleware.ts` | Next.js 16 naming conflict |
 | Dedup globale nel task feed | Un lead in una sola sezione: liste ripetute rendono la pagina inutilizzabile |
+| Dormienti contano dai lead mai contattati | Con `data_ultimo_contatto` null il conteggio parte da `data_apertura`/`created_at`: senza questo fallback 10 lead attivi su 19 non comparivano da nessuna parte |
 | Stadi "avanzati" derivati da `settings` | Gli stadi sono configurabili: nessuna lista hardcoded |
 | "Fatto" su item derivato scrive sul lead | L'item sparisce perché cambia il dato reale, niente stato fantasma |
 | ⚠️ Repo su Desktop sotto sync iCloud | Se `node_modules` viene sfrattata (file dataless), vitest muore con `mmap ETIMEDOUT` e git va in `write error: Operation timed out`. Cura: `rm -rf node_modules && npm ci`, o spostare il repo fuori dalle cartelle sincronizzate |
