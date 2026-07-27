@@ -2,10 +2,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Kanban, Users, Settings, Zap, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Kanban, Users, Settings, Zap, Menu, X, CheckSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const links = [
+  { href: '/tasks', label: 'Da fare', icon: CheckSquare },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/pipeline', label: 'Pipeline', icon: Kanban },
   { href: '/leads', label: 'Lead', icon: Users },
