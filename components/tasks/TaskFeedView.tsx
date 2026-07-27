@@ -36,7 +36,13 @@ export function TaskFeedView({ feed, today, owners, filters }: Props) {
   }
 
   function refresh() {
-    startTransition(() => router.refresh())
+    // Svuota `hidden` insieme al refresh: da qui in poi la verità è quella del
+    // server. Senza questo, una key che torna nel feed (es. lead a cui rimetti
+    // una data di ricontatto) resterebbe nascosta per tutta la sessione.
+    startTransition(() => {
+      router.refresh()
+      setHidden(new Set())
+    })
   }
 
   async function patch(url: string, body: unknown, item: FeedItem, successMsg: string) {
