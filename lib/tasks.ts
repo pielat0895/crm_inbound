@@ -142,3 +142,70 @@ export function buildDaFareOra(
 
   return items.sort(byDateThenPriority)
 }
+
+/**
+ * Sezione "In arrivo": task e scadenze nella finestra (oggi, oggi+upcomingDays].
+ * I task senza due_date finiscono in coda (byDateThenPriority li ordina per ultimo).
+ */
+export function buildInArrivo(
+  leads: LeadWithComputed[],
+  tasks: Task[],
+  now: Date,
+  upcomingDays: number,
+  closingLeadIds: Set<string>,
+  used: Set<string>,
+): FeedItem[] {
+  const today = toDateString(now)
+  const limit = addDays(today, upcomingDays)
+  const leadById = new Map(leads.map(l => [l.id, l]))
+  const items: FeedItem[] = []
+
+  for (const task of tasks) {
+    const inWindow = task.due_date && task.due_date > today && task.due_date <= limit
+    if (!inWindow && task.due_date !== null) continue
+    items.push(taskItem(task, task.lead_id ? leadById.get(task.lead_id) : undefined, closingLeadIds))
+    if (task.lead_id) used.add(task.lead_id)
+  }
+
+  for (const lead of leads) {
+    if (!isActiveLead(lead) || used.has(lead.id)) continue
+
+    if (lead.ricontattare && lead.ricontattare > today && lead.ricontattare <= limit) {
+      items.push({
+        key: `ricontatto:${lead.id}`,
+        kind: 'ricontatto',
+        titolo: `Ricontattare ${leadLabel(lead)}`,
+        date: lead.ricontattare,
+        priorita: null,
+        taskId: null,
+        leadId: lead.id,
+        leadLabel: leadLabel(lead),
+        valore: lead.valore,
+        closingSoon: closingLeadIds.has(lead.id),
+        giorniSilenzio: lead.giorni_ultimo_contatto,
+      })
+      used.add(lead.id)
+      continue
+    }
+
+    const appDate = lead.appuntamento?.slice(0, 10)
+    if (appDate && appDate > today && appDate <= limit) {
+      items.push({
+        key: `appuntamento:${lead.id}`,
+        kind: 'appuntamento',
+        titolo: `Appuntamento · ${leadLabel(lead)}`,
+        date: appDate,
+        priorita: null,
+        taskId: null,
+        leadId: lead.id,
+        leadLabel: leadLabel(lead),
+        valore: lead.valore,
+        closingSoon: closingLeadIds.has(lead.id),
+        giorniSilenzio: lead.giorni_ultimo_contatto,
+      })
+      used.add(lead.id)
+    }
+  }
+
+  return items.sort(byDateThenPriority)
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra } from './tasks'
+import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo } from './tasks'
 import type { Lead, LeadWithComputed, Task } from '@/types'
 import { computeLeadFields } from '@/types'
 
@@ -141,5 +141,56 @@ describe('buildDaFareOra', () => {
   it('skips a derived item when the lead is already used', () => {
     const leads = [makeLead({ id: 'l-1', ricontattare: '2026-07-27' })]
     expect(buildDaFareOra(leads, [], REF, new Set(), new Set(['l-1']))).toEqual([])
+  })
+})
+
+describe('buildInArrivo', () => {
+  it('includes tasks due inside the window, earliest first', () => {
+    const tasks = [
+      makeTask({ id: 't-5', due_date: '2026-08-01', titolo: 'Fra 5 giorni' }),
+      makeTask({ id: 't-1', due_date: '2026-07-28', titolo: 'Domani' }),
+    ]
+    const items = buildInArrivo([], tasks, REF, 7, new Set(), new Set())
+    expect(items.map(i => i.titolo)).toEqual(['Domani', 'Fra 5 giorni'])
+  })
+
+  it('excludes tasks past the window and tasks due today', () => {
+    const tasks = [
+      makeTask({ id: 't-far', due_date: '2026-08-10' }),
+      makeTask({ id: 't-today', due_date: '2026-07-27' }),
+    ]
+    expect(buildInArrivo([], tasks, REF, 7, new Set(), new Set())).toEqual([])
+  })
+
+  it('puts undated tasks last', () => {
+    const tasks = [
+      makeTask({ id: 't-none', due_date: null, titolo: 'Prima o poi' }),
+      makeTask({ id: 't-soon', due_date: '2026-07-29', titolo: 'Mercoledì' }),
+    ]
+    const items = buildInArrivo([], tasks, REF, 7, new Set(), new Set())
+    expect(items.map(i => i.titolo)).toEqual(['Mercoledì', 'Prima o poi'])
+  })
+
+  it('includes upcoming recontacts and appointments', () => {
+    const leads = [
+      makeLead({ id: 'l-1', ricontattare: '2026-07-30' }),
+      makeLead({ id: 'l-2', appuntamento: '2026-07-31T09:00:00Z' }),
+    ]
+    const items = buildInArrivo(leads, [], REF, 7, new Set(), new Set())
+    expect(items.map(i => i.kind)).toEqual(['ricontatto', 'appuntamento'])
+  })
+
+  it('respects the window boundary', () => {
+    const leads = [
+      makeLead({ id: 'l-in', ricontattare: '2026-08-03' }),  // oggi + 7
+      makeLead({ id: 'l-out', ricontattare: '2026-08-04' }), // oggi + 8
+    ]
+    const items = buildInArrivo(leads, [], REF, 7, new Set(), new Set())
+    expect(items.map(i => i.leadId)).toEqual(['l-in'])
+  })
+
+  it('skips leads already used by an earlier section', () => {
+    const leads = [makeLead({ id: 'l-1', ricontattare: '2026-07-30' })]
+    expect(buildInArrivo(leads, [], REF, 7, new Set(), new Set(['l-1']))).toEqual([])
   })
 })
