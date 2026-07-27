@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { toDateString, addDays, isActiveLead, advancedStages } from './tasks'
-import type { Lead, LeadWithComputed } from '@/types'
+import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra } from './tasks'
+import type { Lead, LeadWithComputed, Task } from '@/types'
 import { computeLeadFields } from '@/types'
 
 export const REF = new Date(2026, 6, 27) // lunedì 27 luglio 2026, mezzanotte locale
@@ -70,5 +70,76 @@ describe('advancedStages', () => {
 
   it('returns at least one stage', () => {
     expect(advancedStages(['Solo', 'Chiuso (Perso)'])).toEqual(['Solo'])
+  })
+})
+
+export function makeTask(overrides: Partial<Task> = {}): Task {
+  return {
+    id: 'task-1', created_at: '2026-07-01', titolo: 'Chiama Mario',
+    note: null, due_date: null, lead_id: null, priorita: 'media',
+    done: false, done_at: null, owner: null, ...overrides,
+  }
+}
+
+describe('buildDaFareOra', () => {
+  it('includes tasks due today and overdue, most overdue first', () => {
+    const tasks = [
+      makeTask({ id: 't-today', due_date: '2026-07-27', titolo: 'Oggi' }),
+      makeTask({ id: 't-late', due_date: '2026-07-25', titolo: 'Scaduto' }),
+    ]
+    const items = buildDaFareOra([], tasks, REF, new Set(), new Set())
+    expect(items.map(i => i.titolo)).toEqual(['Scaduto', 'Oggi'])
+  })
+
+  it('excludes tasks due in the future', () => {
+    const tasks = [makeTask({ due_date: '2026-07-28' })]
+    expect(buildDaFareOra([], tasks, REF, new Set(), new Set())).toEqual([])
+  })
+
+  it('excludes tasks without a due date', () => {
+    const tasks = [makeTask({ due_date: null })]
+    expect(buildDaFareOra([], tasks, REF, new Set(), new Set())).toEqual([])
+  })
+
+  it('includes leads to recontact today or earlier', () => {
+    const leads = [makeLead({ id: 'l-1', ricontattare: '2026-07-26' })]
+    const items = buildDaFareOra(leads, [], REF, new Set(), new Set())
+    expect(items).toHaveLength(1)
+    expect(items[0].kind).toBe('ricontatto')
+    expect(items[0].leadLabel).toBe('Mario Rossi · ACME')
+  })
+
+  it('includes appointments dated today only', () => {
+    const leads = [
+      makeLead({ id: 'l-1', appuntamento: '2026-07-27T10:00:00Z' }),
+      makeLead({ id: 'l-2', appuntamento: '2026-07-28T10:00:00Z' }),
+    ]
+    const items = buildDaFareOra(leads, [], REF, new Set(), new Set())
+    expect(items.map(i => i.leadId)).toEqual(['l-1'])
+    expect(items[0].kind).toBe('appuntamento')
+  })
+
+  it('skips derived items for leads in an excluded stage', () => {
+    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Cliente', ricontattare: '2026-07-20' })]
+    expect(buildDaFareOra(leads, [], REF, new Set(), new Set())).toEqual([])
+  })
+
+  it('marks the closing-soon badge on rows whose lead is closing', () => {
+    const leads = [makeLead({ id: 'l-1', ricontattare: '2026-07-27', valore: 12000 })]
+    const items = buildDaFareOra(leads, [], REF, new Set(['l-1']), new Set())
+    expect(items[0].closingSoon).toBe(true)
+    expect(items[0].valore).toBe(12000)
+  })
+
+  it('records consumed lead ids in the used set', () => {
+    const used = new Set<string>()
+    const leads = [makeLead({ id: 'l-1', ricontattare: '2026-07-27' })]
+    buildDaFareOra(leads, [makeTask({ due_date: '2026-07-27', lead_id: 'l-9' })], REF, new Set(), used)
+    expect([...used].sort()).toEqual(['l-1', 'l-9'])
+  })
+
+  it('skips a derived item when the lead is already used', () => {
+    const leads = [makeLead({ id: 'l-1', ricontattare: '2026-07-27' })]
+    expect(buildDaFareOra(leads, [], REF, new Set(), new Set(['l-1']))).toEqual([])
   })
 })

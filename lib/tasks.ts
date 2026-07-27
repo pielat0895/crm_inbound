@@ -1,5 +1,5 @@
 import { ACTIVE_STAGE_EXCLUSIONS, parseLocalDate } from '@/types'
-import type { LeadWithComputed } from '@/types'
+import type { LeadWithComputed, Task, TaskPriority } from '@/types'
 
 /** Data locale in formato YYYY-MM-DD (no UTC: evita lo shift di fuso). */
 export function toDateString(d: Date): string {
@@ -30,4 +30,115 @@ export function advancedStages(pipelineStages: string[]): string[] {
   if (active.length === 0) return []
   const count = Math.max(1, Math.ceil(active.length / 3))
   return active.slice(-count)
+}
+
+export type FeedItemKind = 'task' | 'ricontatto' | 'appuntamento' | 'dormiente'
+
+export type FeedItem = {
+  key: string
+  kind: FeedItemKind
+  titolo: string
+  date: string | null
+  priorita: TaskPriority | null
+  taskId: string | null
+  leadId: string | null
+  leadLabel: string | null
+  valore: number | null
+  closingSoon: boolean
+  giorniSilenzio: number | null
+}
+
+/** "Mario Rossi · ACME", saltando i pezzi mancanti. */
+export function leadLabel(lead: LeadWithComputed): string {
+  const persona = [lead.nome, lead.cognome].filter(Boolean).join(' ')
+  return [persona, lead.azienda].filter(Boolean).join(' · ') || lead.email
+}
+
+const PRIORITY_RANK: Record<TaskPriority, number> = { alta: 0, media: 1, bassa: 2 }
+
+function byDateThenPriority(a: FeedItem, b: FeedItem): number {
+  const da = a.date ?? '9999-12-31'
+  const db = b.date ?? '9999-12-31'
+  if (da !== db) return da < db ? -1 : 1
+  return PRIORITY_RANK[a.priorita ?? 'media'] - PRIORITY_RANK[b.priorita ?? 'media']
+}
+
+function taskItem(task: Task, lead: LeadWithComputed | undefined, closingLeadIds: Set<string>): FeedItem {
+  return {
+    key: `task:${task.id}`,
+    kind: 'task',
+    titolo: task.titolo,
+    date: task.due_date,
+    priorita: task.priorita,
+    taskId: task.id,
+    leadId: task.lead_id,
+    leadLabel: lead ? leadLabel(lead) : null,
+    valore: lead?.valore ?? null,
+    closingSoon: task.lead_id ? closingLeadIds.has(task.lead_id) : false,
+    giorniSilenzio: lead?.giorni_ultimo_contatto ?? null,
+  }
+}
+
+/**
+ * Sezione "Da fare ora": task scaduti o in scadenza oggi, ricontatti dovuti,
+ * appuntamenti di oggi. `used` accumula i lead già consumati da item derivati,
+ * così le sezioni successive non li ripetono.
+ */
+export function buildDaFareOra(
+  leads: LeadWithComputed[],
+  tasks: Task[],
+  now: Date,
+  closingLeadIds: Set<string>,
+  used: Set<string>,
+): FeedItem[] {
+  const today = toDateString(now)
+  const leadById = new Map(leads.map(l => [l.id, l]))
+  const items: FeedItem[] = []
+
+  for (const task of tasks) {
+    if (!task.due_date || task.due_date > today) continue
+    items.push(taskItem(task, task.lead_id ? leadById.get(task.lead_id) : undefined, closingLeadIds))
+    if (task.lead_id) used.add(task.lead_id)
+  }
+
+  for (const lead of leads) {
+    if (!isActiveLead(lead) || used.has(lead.id)) continue
+
+    if (lead.ricontattare && lead.ricontattare <= today) {
+      items.push({
+        key: `ricontatto:${lead.id}`,
+        kind: 'ricontatto',
+        titolo: `Ricontattare ${leadLabel(lead)}`,
+        date: lead.ricontattare,
+        priorita: null,
+        taskId: null,
+        leadId: lead.id,
+        leadLabel: leadLabel(lead),
+        valore: lead.valore,
+        closingSoon: closingLeadIds.has(lead.id),
+        giorniSilenzio: lead.giorni_ultimo_contatto,
+      })
+      used.add(lead.id)
+      continue
+    }
+
+    if (lead.appuntamento && lead.appuntamento.slice(0, 10) === today) {
+      items.push({
+        key: `appuntamento:${lead.id}`,
+        kind: 'appuntamento',
+        titolo: `Appuntamento · ${leadLabel(lead)}`,
+        date: today,
+        priorita: null,
+        taskId: null,
+        leadId: lead.id,
+        leadLabel: leadLabel(lead),
+        valore: lead.valore,
+        closingSoon: closingLeadIds.has(lead.id),
+        giorniSilenzio: lead.giorni_ultimo_contatto,
+      })
+      used.add(lead.id)
+    }
+  }
+
+  return items.sort(byDateThenPriority)
 }
