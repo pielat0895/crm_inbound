@@ -209,6 +209,44 @@ export function buildProssimiChiusura(
   })
 }
 
+/** Sezione "Dormienti": lead in silenzio da troppo tempo e senza nulla di pianificato. */
+export function buildDormienti(
+  leads: LeadWithComputed[],
+  tasks: Task[],
+  now: Date,
+  dormantDays: number,
+  closingLeadIds: Set<string>,
+  used: Set<string>,
+): FeedItem[] {
+  const today = toDateString(now)
+  const leadsWithOpenTask = new Set(tasks.filter(t => t.lead_id).map(t => t.lead_id!))
+  const items: FeedItem[] = []
+
+  for (const lead of leads) {
+    if (!isActiveLead(lead) || used.has(lead.id)) continue
+    if (leadsWithOpenTask.has(lead.id)) continue
+    if (lead.ricontattare && lead.ricontattare > today) continue
+    if (lead.giorni_ultimo_contatto === null || lead.giorni_ultimo_contatto < dormantDays) continue
+
+    items.push({
+      key: `dormiente:${lead.id}`,
+      kind: 'dormiente',
+      titolo: leadLabel(lead),
+      date: lead.data_ultimo_contatto,
+      priorita: null,
+      taskId: null,
+      leadId: lead.id,
+      leadLabel: leadLabel(lead),
+      valore: lead.valore,
+      closingSoon: closingLeadIds.has(lead.id),
+      giorniSilenzio: lead.giorni_ultimo_contatto,
+    })
+    used.add(lead.id)
+  }
+
+  return items.sort((a, b) => (b.giorniSilenzio ?? 0) - (a.giorniSilenzio ?? 0))
+}
+
 /**
  * Sezione "In arrivo": task e scadenze nella finestra (oggi, oggi+upcomingDays].
  * I task senza due_date finiscono in coda (byDateThenPriority li ordina per ultimo).
