@@ -1,6 +1,9 @@
 'use client'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { ListPlus } from 'lucide-react'
+import { toast } from 'sonner'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -40,16 +43,58 @@ export function NoteTab({ leadId, initialNote }: Props) {
     }
   }, [leadId, note])
 
+  const [creating, setCreating] = useState(false)
+
+  const handleCreateTask = useCallback(async () => {
+    // Il titolo è la prima riga non vuota della nota, tagliata a 120 caratteri.
+    const firstLine = note.split('\n').map(l => l.trim()).find(Boolean)
+    if (!firstLine) {
+      toast.error('Scrivi una nota prima di creare il task')
+      return
+    }
+    setCreating(true)
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titolo: firstLine.slice(0, 120),
+        note,
+        lead_id: leadId,
+        priorita: 'media',
+      }),
+    })
+    setCreating(false)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      toast.error(data.error ?? 'Errore nella creazione del task')
+      return
+    }
+    toast.success('Task creato · lo trovi in "Da fare"')
+  }, [leadId, note])
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-muted-foreground">Note</span>
-        {status === 'saved' && (
-          <span className="text-xs text-green-600 animate-in fade-in">Salvato ✓</span>
-        )}
-        {status === 'error' && (
-          <span className="text-xs text-destructive">Errore</span>
-        )}
+        <div className="flex items-center gap-3">
+          {status === 'saved' && (
+            <span className="text-xs text-green-600 animate-in fade-in">Salvato ✓</span>
+          )}
+          {status === 'error' && (
+            <span className="text-xs text-destructive">Errore</span>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={handleCreateTask}
+            disabled={creating}
+          >
+            <ListPlus className="mr-1 h-3.5 w-3.5" />
+            Crea task da questa nota
+          </Button>
+        </div>
       </div>
       <Textarea
         value={note}
