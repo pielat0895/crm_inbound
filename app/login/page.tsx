@@ -23,7 +23,7 @@ export default function LoginPage() {
       body: JSON.stringify({ password }),
     })
     if (res.ok) {
-      router.push('/dashboard')
+      router.push('/tasks')
     } else {
       const data = await res.json().catch(() => null)
       setError(res.status === 429 ? (data?.error ?? 'Troppi tentativi.') : 'Password errata')

@@ -1,11 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Kanban, Users, Settings, Zap } from 'lucide-react'
+import { LayoutDashboard, Kanban, Users, Settings, Zap, CheckSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SearchModal } from './SearchModal'
 
 const links = [
+  { href: '/tasks', label: 'Da fare', icon: CheckSquare },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/pipeline', label: 'Pipeline', icon: Kanban },
   { href: '/leads', label: 'Lead', icon: Users },
