@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { computeLeadFields } from '@/types'
+import { isActiveLead } from '@/lib/tasks'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 
 export default async function PipelinePage() {
@@ -12,7 +13,7 @@ export default async function PipelinePage() {
     getSettings(),
   ])
 
-  const computed = (leads ?? []).map(l => computeLeadFields(l))
+  const computed = (leads ?? []).map(l => computeLeadFields(l)).filter(isActiveLead)
 
   return (
     <div className="space-y-4">

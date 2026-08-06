@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { computeLeadFields } from '@/types'
 import { pickLeadFields } from '@/lib/lead-fields'
 import { sanitizeSearchTerm } from '@/lib/search'
+import { isActiveLead } from '@/lib/tasks'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -20,7 +21,8 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json((data ?? []).map(l => computeLeadFields(l)))
+  const activeLeads = (data ?? []).map(l => computeLeadFields(l)).filter(isActiveLead)
+  return NextResponse.json(activeLeads)
 }
 
 export async function POST(request: NextRequest) {
