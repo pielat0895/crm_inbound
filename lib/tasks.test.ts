@@ -42,34 +42,42 @@ describe('addDays', () => {
 })
 
 describe('isActiveLead', () => {
-  it('accepts an open stage', () => {
-    expect(isActiveLead(makeLead({ stadio_pipeline: 'Discovery' }))).toBe(true)
+  it('treats a lead with no stato as active (not yet closed)', () => {
+    expect(isActiveLead(makeLead({ stato: null }))).toBe(true)
   })
 
-  it('rejects closed stages', () => {
-    expect(isActiveLead(makeLead({ stadio_pipeline: 'Chiuso (Vinto)' }))).toBe(false)
-    expect(isActiveLead(makeLead({ stadio_pipeline: 'Chiuso (Perso)' }))).toBe(false)
+  it('accepts open stato values', () => {
+    expect(isActiveLead(makeLead({ stato: 'In corso' }))).toBe(true)
+    expect(isActiveLead(makeLead({ stato: 'In chiusura' }))).toBe(true)
+    expect(isActiveLead(makeLead({ stato: 'Rimandato' }))).toBe(true)
   })
 
-  it('rejects Cliente and Studente', () => {
-    expect(isActiveLead(makeLead({ stadio_pipeline: 'Cliente' }))).toBe(false)
-    expect(isActiveLead(makeLead({ stadio_pipeline: 'Studente' }))).toBe(false)
+  it('rejects terminal stato values', () => {
+    expect(isActiveLead(makeLead({ stato: 'Vinto' }))).toBe(false)
+    expect(isActiveLead(makeLead({ stato: 'Perso' }))).toBe(false)
+    expect(isActiveLead(makeLead({ stato: 'Cliente' }))).toBe(false)
+    expect(isActiveLead(makeLead({ stato: 'Non qualificato' }))).toBe(false)
+    expect(isActiveLead(makeLead({ stato: 'Studente' }))).toBe(false)
   })
 })
 
 describe('advancedStages', () => {
-  it('returns the last third of the active stages', () => {
-    const stages = ['Lead In', 'Discovery', 'Proposal Sent', 'Chiuso (Vinto)', 'Chiuso (Perso)', 'Cliente', 'Studente']
-    expect(advancedStages(stages)).toEqual(['Proposal Sent'])
+  it('returns the last third of the pipeline stages', () => {
+    const stages = ['Lead In', 'Discovery', 'Proposal Sent', 'Proposal Signed']
+    expect(advancedStages(stages)).toEqual(['Proposal Signed'])
   })
 
   it('scales with a longer pipeline', () => {
-    const stages = ['A', 'B', 'C', 'D', 'E', 'F', 'Chiuso (Vinto)']
+    const stages = ['A', 'B', 'C', 'D', 'E', 'F']
     expect(advancedStages(stages)).toEqual(['E', 'F'])
   })
 
   it('returns at least one stage', () => {
-    expect(advancedStages(['Solo', 'Chiuso (Perso)'])).toEqual(['Solo'])
+    expect(advancedStages(['Solo'])).toEqual(['Solo'])
+  })
+
+  it('returns empty for an empty pipeline', () => {
+    expect(advancedStages([])).toEqual([])
   })
 })
 
@@ -120,7 +128,7 @@ describe('buildDaFareOra', () => {
   })
 
   it('skips derived items for leads in an excluded stage', () => {
-    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Cliente', ricontattare: '2026-07-20' })]
+    const leads = [makeLead({ id: 'l-1', stato: 'Cliente', ricontattare: '2026-07-20' })]
     expect(buildDaFareOra(leads, [], REF, new Set(), new Set())).toEqual([])
   })
 
@@ -195,7 +203,7 @@ describe('buildInArrivo', () => {
   })
 })
 
-const STAGES = ['Lead In', 'Discovery', 'Proposal Sent', 'Chiuso (Vinto)', 'Chiuso (Perso)', 'Cliente', 'Studente']
+const STAGES = ['Lead In', 'Discovery', 'Proposal Sent']
 
 describe('buildProssimiChiusura', () => {
   it('includes leads with a forecast date inside the window', () => {
@@ -241,7 +249,7 @@ describe('buildProssimiChiusura', () => {
   })
 
   it('excludes leads in excluded stages even with a forecast date', () => {
-    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Chiuso (Vinto)', data_chiusura_prevista: '2026-08-01' })]
+    const leads = [makeLead({ id: 'l-1', stato: 'Vinto', data_chiusura_prevista: '2026-08-01' })]
     expect(buildProssimiChiusura(leads, REF, 30, STAGES, 7, new Set())).toEqual([])
   })
 })
@@ -304,7 +312,7 @@ describe('buildDormienti', () => {
   })
 
   it('excludes closed and client stages', () => {
-    const leads = [makeLead({ id: 'l-1', stadio_pipeline: 'Cliente', data_ultimo_contatto: '2026-01-01' })]
+    const leads = [makeLead({ id: 'l-1', stato: 'Cliente', data_ultimo_contatto: '2026-01-01' })]
     expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
   })
 })

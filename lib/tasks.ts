@@ -1,4 +1,4 @@
-import { ACTIVE_STAGE_EXCLUSIONS, parseLocalDate } from '@/types'
+import { STATO_TERMINALI, parseLocalDate } from '@/types'
 import type { LeadWithComputed, Task, TaskPriority, Settings } from '@/types'
 
 /** Data locale in formato YYYY-MM-DD (no UTC: evita lo shift di fuso). */
@@ -16,20 +16,19 @@ export function addDays(dateStr: string, days: number): string {
   return toDateString(d)
 }
 
-/** Un lead è "lavorabile": non chiuso, non già cliente/studente. */
+/** Un lead è "lavorabile": stato non ancora terminale (null = non ancora chiuso). */
 export function isActiveLead(lead: LeadWithComputed): boolean {
-  return !ACTIVE_STAGE_EXCLUSIONS.includes(lead.stadio_pipeline)
+  return !STATO_TERMINALI.includes(lead.stato ?? '')
 }
 
 /**
- * Gli stadi "avanzati" = ultimo terzo degli stadi lavorabili configurati.
+ * Gli stadi "avanzati" = ultimo terzo degli stadi pipeline configurati.
  * Gli stadi sono editabili da settings, quindi non possono essere hardcoded.
  */
 export function advancedStages(pipelineStages: string[]): string[] {
-  const active = pipelineStages.filter(s => !ACTIVE_STAGE_EXCLUSIONS.includes(s))
-  if (active.length === 0) return []
-  const count = Math.max(1, Math.ceil(active.length / 3))
-  return active.slice(-count)
+  if (pipelineStages.length === 0) return []
+  const count = Math.max(1, Math.floor(pipelineStages.length / 3))
+  return pipelineStages.slice(-count)
 }
 
 export type FeedItemKind = 'task' | 'ricontatto' | 'appuntamento' | 'dormiente'
