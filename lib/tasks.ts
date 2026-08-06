@@ -27,7 +27,7 @@ export function isActiveLead(lead: LeadWithComputed): boolean {
  */
 export function advancedStages(pipelineStages: string[]): string[] {
   if (pipelineStages.length === 0) return []
-  const count = Math.max(1, Math.floor(pipelineStages.length / 3))
+  const count = Math.max(1, Math.ceil(pipelineStages.length / 3))
   return pipelineStages.slice(-count)
 }
 

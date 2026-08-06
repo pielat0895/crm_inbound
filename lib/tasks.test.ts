@@ -64,7 +64,7 @@ describe('isActiveLead', () => {
 describe('advancedStages', () => {
   it('returns the last third of the pipeline stages', () => {
     const stages = ['Lead In', 'Discovery', 'Proposal Sent', 'Proposal Signed']
-    expect(advancedStages(stages)).toEqual(['Proposal Signed'])
+    expect(advancedStages(stages)).toEqual(['Proposal Sent', 'Proposal Signed'])
   })
 
   it('scales with a longer pipeline', () => {
