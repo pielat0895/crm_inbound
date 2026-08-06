@@ -7,7 +7,7 @@ import { sanitizeSearchTerm } from '@/lib/search'
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadFilters } from '@/components/leads/LeadFilters'
 import { LeadQuickStats } from '@/components/leads/LeadQuickStats'
-import { CLOSED_STAGES } from '@/types'
+import { STATO_TERMINALI } from '@/types'
 import { Suspense } from 'react'
 
 const PAGE_SIZE = 50
@@ -62,7 +62,7 @@ export default async function LeadsPage({
   cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
 
   const [{ count: countAttivi }, { count: countScaduti }] = await Promise.all([
-    supabase.from('leads').select('*', { count: 'exact', head: true }).not('stadio_pipeline', 'in', `(${CLOSED_STAGES.map(s => `"${s}"`).join(',')})`),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).or(`stato.is.null,stato.not.in.(${STATO_TERMINALI.map(s => `"${s}"`).join(',')})`),
     supabase.from('leads').select('*', { count: 'exact', head: true }).not('data_ultimo_contatto', 'is', null).lte('data_ultimo_contatto', cutoff.toISOString().split('T')[0]),
   ])
 

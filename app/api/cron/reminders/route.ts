@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
-import { computeLeadFields, CLOSED_STAGES } from '@/types'
+import { computeLeadFields, STATO_TERMINALI } from '@/types'
 import { sendOverdueDigest } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = createServiceClient()
   const [{ data: leads }, settings] = await Promise.all([
-    supabase.from('leads').select('*').not('stadio_pipeline', 'in', `(${CLOSED_STAGES.map(s => `"${s}"`).join(',')})`),
+    supabase.from('leads').select('*').or(`stato.is.null,stato.not.in.(${STATO_TERMINALI.map(s => `"${s}"`).join(',')})`),
     getSettings(),
   ])
 

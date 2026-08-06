@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { StatsCard } from '@/components/ui/StatsCard'
-import { computeLeadFields, CLOSED_STAGES } from '@/types'
+import { computeLeadFields, STATO_TERMINALI } from '@/types'
 import Link from 'next/link'
 import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target } from 'lucide-react'
 import { TrendChart } from '@/components/dashboard/TrendChart'
@@ -65,10 +65,10 @@ export default async function DashboardPage({
 
   const allLeads = baseLeads.filter(l => filterByDate(l, l.data_apertura))
   // openLeads uses baseLeads (owner/stadio/origine filtered) but ignores date
-  const openLeads = baseLeads.filter(l => !CLOSED_STAGES.includes(l.stadio_pipeline))
+  const openLeads = baseLeads.filter(l => !STATO_TERMINALI.includes(l.stato ?? ''))
   // Won leads filtered by close date, not open date
   const wonLeads = baseLeads.filter(l =>
-    l.stadio_pipeline === 'Chiuso (Vinto)' && filterByDate(l, l.data_chiusura)
+    l.stato === 'Vinto' && filterByDate(l, l.data_chiusura)
   )
 
   const conversionRate = allLeads.length > 0
