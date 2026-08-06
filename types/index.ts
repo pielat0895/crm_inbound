@@ -70,21 +70,32 @@ export type Settings = {
   pipeline_stages: string[]
 }
 
+// Stadio: posizione nel funnel prima della chiusura. Nessuno stato terminale
+// qui: l'esito (vinto/perso/cliente/...) vive in `stato`. Quando `stato`
+// diventa terminale, `stadio_pipeline` resta congelato all'ultimo valore
+// raggiunto (dice fin dove è arrivato il lead prima di fermarsi).
 export const DEFAULT_PIPELINE_STAGES = [
   'Lead In',
   'Discovery',
   'Proposal Sent',
-  'Chiuso (Vinto)',
-  'Chiuso (Perso)',
+  'Proposal Signed',
+]
+
+// Stato: esito/stato dettagliato del lead. Guida le metriche
+// won/lost/attivo/dormiente — è l'unico campo che la logica di business legge.
+export const STATO_OPTIONS = [
+  'In corso',
+  'In chiusura',
+  'Rimandato',
+  'Vinto',
+  'Perso',
   'Cliente',
+  'Non qualificato',
   'Studente',
 ]
 
-export const CLOSED_STAGES = ['Chiuso (Vinto)', 'Chiuso (Perso)']
-
-// Stadi che non rappresentano un deal in corso: esclusi dal task feed.
-// 'Cliente' e 'Studente' non sono chiusure, ma non c'è nulla da lavorare.
-export const ACTIVE_STAGE_EXCLUSIONS = [...CLOSED_STAGES, 'Cliente', 'Studente']
+// Valori terminali di `stato`: il lead non è più lavorabile.
+export const STATO_TERMINALI = ['Vinto', 'Perso', 'Cliente', 'Non qualificato', 'Studente']
 
 export const DIPENDENTI_OPTIONS = [
   '1-10',
@@ -123,7 +134,7 @@ export const INDUSTRY_OPTIONS = [
   'Studente',
 ]
 
-export const STATO_LEAD_OPTIONS = ['Attivo', 'In Attesa', 'Chiuso']
+export const STATO_LEAD_OPTIONS = ['Attivo', 'In Attesa', 'Chiuso', 'Cliente']
 
 export const ESPERIENZA_US_OPTIONS = [
   'Web (sito)',
