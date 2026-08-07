@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const activeLeads = (data ?? []).map(l => computeLeadFields(l)).filter(isActiveLead)
+  const activeLeads = (data ?? [])
+    .map(l => computeLeadFields(l))
+    .filter(isActiveLead)
+    .filter(l => l.stadio_pipeline !== 'Da sistemare')
   return NextResponse.json(activeLeads)
 }
 
