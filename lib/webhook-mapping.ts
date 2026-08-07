@@ -20,6 +20,7 @@ const INBOUND_FIELD_MAP: Record<string, string> = {
   esperienza_us: 'esperienza_us',
   stadio_pipeline: 'stadio_pipeline',
   stato_lead: 'stato_lead',
+  stato: 'stato',
   valore: 'valore',
   data_chiusura: 'data_chiusura',
   owner: 'owner',
