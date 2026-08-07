@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import type { LeadWithComputed } from '@/types'
-import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUSTRY_OPTIONS, STATO_LEAD_OPTIONS, DIPENDENTI_OPTIONS } from '@/types'
+import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUSTRY_OPTIONS, STATO_LEAD_OPTIONS, STATO_OPTIONS, DIPENDENTI_OPTIONS } from '@/types'
 
 type Props = {
   lead?: LeadWithComputed
@@ -236,8 +236,18 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
               </SelectContent>
             </Select>
           </div>
-          <Field label="Stato" name="stato" form={form} set={set} />
-          <Field label="Motivo lost" name="motivo_lost" form={form} set={set} />
+          <div className="space-y-1">
+            <Label>Stato</Label>
+            <Select value={form.stato ?? ''} onValueChange={v => set('stato', v ?? '')}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                {STATO_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {form.stato === 'Perso' && (
+            <Field label="Motivo lost" name="motivo_lost" form={form} set={set} />
+          )}
           <div className="space-y-1">
             <Label htmlFor="valore">Valore (€)</Label>
             <Input
