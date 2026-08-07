@@ -1,11 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { DEFAULT_PIPELINE_STAGES, STATO_OPTIONS } from '@/types'
 
 function toISO(s: string | undefined): string | null {
   if (!s || s.trim() === '') return null
   const [d, m, y] = s.trim().split('/')
   if (!d || !m || !y) return null
   return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+}
+
+// Drops legacy/unknown stadio_pipeline values (e.g. from an old CSV export)
+// instead of sending them through — the DB CHECK constraint would reject the
+// whole row. Returning undefined omits the key from the JSON payload, so the
+// column's DEFAULT 'Lead In' applies on insert / stays unchanged on update.
+function sanitizeStadio(s: string | undefined): string | undefined {
+  const v = s || 'Lead In'
+  return DEFAULT_PIPELINE_STAGES.includes(v) ? v : undefined
+}
+
+// Same idea for stato: empty stays null (existing "clear the field"
+// convention), an unrecognized value is dropped rather than rejected by
+// the DB CHECK constraint.
+function sanitizeStato(s: string | undefined): string | null | undefined {
+  if (!s) return null
+  return STATO_OPTIONS.includes(s) ? s : undefined
 }
 
 function toBool(s: string | undefined): boolean | null {
@@ -90,8 +108,8 @@ export async function POST(request: NextRequest) {
       richiesta: r['Richiesta'] || null,
       origine: r['Origine'] || null,
       stato_lead: r['Stato Lead'] || null,
-      stato: r['Stato'] || null,
-      stadio_pipeline: r['Stadio Pipeline'] || 'Lead In',
+      stato: sanitizeStato(r['Stato']),
+      stadio_pipeline: sanitizeStadio(r['Stadio Pipeline']),
       motivo_lost: (r['Motivo Lost'] && r['Motivo Lost'] !== 'Nessuno') ? r['Motivo Lost'] : null,
       contattato: toBool(r['Contattato']) ?? false,
       data_chiusura: toISO(r['Data di Chiusura']),

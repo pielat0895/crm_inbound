@@ -78,6 +78,16 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Ensures the current stadio_pipeline always renders as a selectable option,
+  // even when it's a legacy/placeholder value (e.g. 'Da sistemare') that isn't
+  // part of the configured `stages` list. Without this, the Select can't find
+  // a matching item and silently falls back to the first option on save,
+  // corrupting the lead's stadio_pipeline. Form-local only — never persisted
+  // into `stages`/settings.
+  const stadioOptions = stages.includes(form.stadio_pipeline)
+    ? stages
+    : [...stages, form.stadio_pipeline].filter(Boolean)
+
   function set(key: string, value: string) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
@@ -223,7 +233,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
             <Select value={form.stadio_pipeline ?? 'Lead In'} onValueChange={v => set('stadio_pipeline', v ?? 'Lead In')}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {stages.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {stadioOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -238,7 +248,13 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
           </div>
           <div className="space-y-1">
             <Label>Stato</Label>
-            <Select value={form.stato ?? ''} onValueChange={v => set('stato', v ?? '')}>
+            <Select
+              value={form.stato ?? ''}
+              onValueChange={v => {
+                set('stato', v ?? '')
+                if (v !== 'Perso') set('motivo_lost', '')
+              }}
+            >
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 {STATO_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}

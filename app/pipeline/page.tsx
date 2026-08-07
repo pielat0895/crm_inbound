@@ -13,7 +13,7 @@ export default async function PipelinePage() {
     getSettings(),
   ])
 
-  const computed = (leads ?? []).map(l => computeLeadFields(l)).filter(isActiveLead)
+  const computed = (leads ?? []).map(l => computeLeadFields(l)).filter(isActiveLead).filter(l => l.stadio_pipeline !== 'Da sistemare')
 
   return (
     <div className="space-y-4">
