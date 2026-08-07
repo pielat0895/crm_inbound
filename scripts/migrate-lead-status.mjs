@@ -49,9 +49,10 @@ function planRow(lead) {
   const isTerminalOld = old in STADIO_TO_STATO
   const stato = STADIO_TO_STATO[old] ?? 'In corso'
   // For a lead that was already terminal in the old vocabulary, we have no
-  // record of how far it got in the funnel before closing — 'Proposal Sent'
-  // is a guess, flagged for manual review rather than applied silently.
-  const newStadio = STADIO_TO_NEW_STADIO[old] ?? 'Proposal Sent'
+  // record of how far it got in the funnel before closing — instead of
+  // guessing a real stage, we write a visible placeholder so a human can
+  // look it up and correct it.
+  const newStadio = STADIO_TO_NEW_STADIO[old] ?? 'Da sistemare'
   const needsReview = !KNOWN_OLD_VALUES.has(old) || isTerminalOld
 
   return { id: lead.id, email: lead.email, oldStadio: old, newStato: stato, newStadio, needsReview }
@@ -68,12 +69,12 @@ async function main() {
   const clean = plans.filter(p => !p.needsReview)
 
   console.log(`Totale lead: ${plans.length}`)
-  console.log(`Da rivedere manualmente (stadio_pipeline è una stima): ${toReview.length}`)
+  console.log(`Da rivedere manualmente (stadio_pipeline è un placeholder da correggere): ${toReview.length}`)
   console.log(`Mappatura diretta: ${clean.length}\n`)
 
-  console.log('--- Righe da rivedere (esito terminale, stadio_pipeline stimato) ---')
+  console.log('--- Righe da rivedere (esito terminale, stadio_pipeline è un placeholder) ---')
   for (const p of toReview) {
-    console.log(`${(p.email ?? p.id).padEnd(35)} "${p.oldStadio}" -> stato="${p.newStato}", stadio_pipeline="${p.newStadio}" (stima)`)
+    console.log(`${(p.email ?? p.id).padEnd(35)} "${p.oldStadio}" -> stato="${p.newStato}", stadio_pipeline="${p.newStadio}" (placeholder)`)
   }
 
   console.log('\n--- Righe con mappatura diretta ---')
