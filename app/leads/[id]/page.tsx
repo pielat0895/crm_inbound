@@ -9,16 +9,7 @@ import { notFound } from 'next/navigation'
 import { CalendarButton } from './CalendarButton'
 import { DeleteLeadButton } from './DeleteLeadButton'
 import { Mail, Phone, Building2, Euro, Clock } from 'lucide-react'
-
-const STAGE_COLORS: Record<string, string> = {
-  'Lead In':        'bg-blue-100 text-blue-700',
-  'Discovery':      'bg-violet-100 text-violet-700',
-  'Proposal Sent':  'bg-amber-100 text-amber-700',
-  'Chiuso (Vinto)': 'bg-green-100 text-green-700',
-  'Chiuso (Perso)': 'bg-red-100 text-red-700',
-  'Cliente':        'bg-emerald-100 text-emerald-700',
-  'Studente':       'bg-gray-100 text-gray-600',
-}
+import { STAGE_BADGE_CLASSES, STATO_BADGE_CLASSES } from '@/lib/stage-colors'
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -36,7 +27,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   if (error || !lead) notFound()
 
   const computed = computeLeadFields(lead)
-  const stageClass = STAGE_COLORS[computed.stadio_pipeline] ?? 'bg-gray-100 text-gray-600'
+  const stageClass = STAGE_BADGE_CLASSES[computed.stadio_pipeline] ?? 'bg-gray-100 text-gray-600'
   const isOverdue = computed.giorni_ultimo_contatto !== null &&
     computed.giorni_ultimo_contatto >= settings.followup_threshold_days
 
@@ -63,6 +54,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${stageClass}`}>
                 {computed.stadio_pipeline}
               </span>
+              {computed.stato && (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATO_BADGE_CLASSES[computed.stato] ?? 'bg-gray-100 text-gray-600'}`}>
+                  {computed.stato}
+                </span>
+              )}
               {computed.giorni_aperto !== null && (
                 <Badge variant="outline" className="text-xs">
                   <Clock className="h-3 w-3 mr-1" />

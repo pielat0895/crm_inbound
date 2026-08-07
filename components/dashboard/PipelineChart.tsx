@@ -3,16 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
-
-const STAGE_COLORS: Record<string, string> = {
-  'Lead In':        '#6366f1',
-  'Discovery':      '#8b5cf6',
-  'Proposal Sent':  '#f59e0b',
-  'Chiuso (Vinto)': '#10b981',
-  'Chiuso (Perso)': '#ef4444',
-  'Cliente':        '#059669',
-  'Studente':       '#9ca3af',
-}
+import { STAGE_CHART_COLORS } from '@/lib/stage-colors'
 
 type Props = {
   data: { stage: string; count: number; revenue: number }[]
@@ -47,7 +38,7 @@ export function PipelineChart({ data, onSegmentClick }: Props) {
           onClick={onSegmentClick ? (entry: any) => onSegmentClick(entry.stage) : undefined}
         >
           {data.map(entry => (
-            <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] ?? '#6366f1'} />
+            <Cell key={entry.stage} fill={STAGE_CHART_COLORS[entry.stage] ?? '#6366f1'} />
           ))}
         </Bar>
       </BarChart>

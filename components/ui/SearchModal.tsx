@@ -2,16 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X } from 'lucide-react'
-
-const STAGE_COLORS: Record<string, string> = {
-  'Lead In':        'bg-blue-100 text-blue-700',
-  'Discovery':      'bg-violet-100 text-violet-700',
-  'Proposal Sent':  'bg-amber-100 text-amber-700',
-  'Chiuso (Vinto)': 'bg-green-100 text-green-700',
-  'Chiuso (Perso)': 'bg-red-100 text-red-700',
-  'Cliente':        'bg-emerald-100 text-emerald-700',
-  'Studente':       'bg-gray-100 text-gray-600',
-}
+import { STAGE_BADGE_CLASSES } from '@/lib/stage-colors'
 
 type Result = {
   id: string
@@ -128,7 +119,7 @@ export function SearchModal() {
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{r.email}</p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${STAGE_COLORS[r.stadio_pipeline] ?? 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${STAGE_BADGE_CLASSES[r.stadio_pipeline] ?? 'bg-gray-100 text-gray-600'}`}>
                     {r.stadio_pipeline}
                   </span>
                 </button>

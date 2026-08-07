@@ -12,16 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
 import { ChevronLeft, ChevronRight, Users, SearchX, Pencil, Trash2 } from 'lucide-react'
-
-const STAGE_COLORS: Record<string, string> = {
-  'Lead In':        'bg-blue-100 text-blue-700',
-  'Discovery':      'bg-violet-100 text-violet-700',
-  'Proposal Sent':  'bg-amber-100 text-amber-700',
-  'Chiuso (Vinto)': 'bg-green-100 text-green-700',
-  'Chiuso (Perso)': 'bg-red-100 text-red-700',
-  'Cliente':        'bg-emerald-100 text-emerald-700',
-  'Studente':       'bg-gray-100 text-gray-600',
-}
+import { STAGE_BADGE_CLASSES, STATO_BADGE_CLASSES } from '@/lib/stage-colors'
 
 type Props = {
   leads: LeadWithComputed[]
@@ -92,9 +83,16 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
                 <td className="px-4 py-2 text-muted-foreground">{lead.azienda ?? '—'}</td>
                 <td className="px-4 py-2 text-muted-foreground">{lead.origine ?? '—'}</td>
                 <td className="px-4 py-2">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_COLORS[lead.stadio_pipeline] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {lead.stadio_pipeline}
-                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_BADGE_CLASSES[lead.stadio_pipeline] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {lead.stadio_pipeline}
+                    </span>
+                    {lead.stato && (
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATO_BADGE_CLASSES[lead.stato] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {lead.stato}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {lead.data_ultimo_contatto ? new Date(lead.data_ultimo_contatto).toLocaleDateString('it-IT') : '—'}
