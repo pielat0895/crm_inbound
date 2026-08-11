@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Download, Plus, X } from 'lucide-react'
 import type { LeadWithComputed } from '@/types'
-import { ORIGINE_OPTIONS } from '@/types'
+import { ORIGINE_OPTIONS, STATO_APPUNTAMENTO_OPTIONS } from '@/types'
 
 type Props = {
   stages: string[]
@@ -22,9 +22,10 @@ export function LeadFilters({ stages, leads }: Props) {
   const stadio = params.get('stadio') ?? 'all'
   const origine = params.get('origine') ?? 'all'
   const contattato = params.get('contattato') ?? 'all'
+  const statoAppuntamento = params.get('stato_appuntamento') ?? 'all'
   const scaduto = params.get('scaduto') === '1'
 
-  const hasFilters = q || stadio !== 'all' || origine !== 'all' || contattato !== 'all' || scaduto
+  const hasFilters = q || stadio !== 'all' || origine !== 'all' || contattato !== 'all' || statoAppuntamento !== 'all' || scaduto
 
   const update = useCallback((updates: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString())
@@ -112,6 +113,16 @@ export function LeadFilters({ stages, leads }: Props) {
             <SelectItem value="all">Tutti</SelectItem>
             <SelectItem value="si">Contattati</SelectItem>
             <SelectItem value="no">Non contattati</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={statoAppuntamento} onValueChange={v => update({ stato_appuntamento: v })}>
+          <SelectTrigger className="w-44 h-8 text-sm">
+            <SelectValue placeholder="Stato appuntamento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti gli appuntamenti</SelectItem>
+            {STATO_APPUNTAMENTO_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
           </SelectContent>
         </Select>
 

@@ -15,7 +15,7 @@ const PAGE_SIZE = 50
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; stadio?: string; origine?: string; contattato?: string; scaduto?: string; page?: string; sortBy?: string; sortDir?: string }>
+  searchParams: Promise<{ q?: string; stadio?: string; origine?: string; contattato?: string; stato_appuntamento?: string; scaduto?: string; page?: string; sortBy?: string; sortDir?: string }>
 }) {
   const sp = await searchParams
   const page = Math.max(1, parseInt(sp.page ?? '1', 10))
@@ -44,6 +44,9 @@ export default async function LeadsPage({
   } else if (sp.contattato === 'no') {
     query = query.eq('contattato', false)
   }
+  if (sp.stato_appuntamento && sp.stato_appuntamento !== 'all') {
+    query = query.eq('stato_appuntamento', sp.stato_appuntamento)
+  }
   if (sp.scaduto === '1') {
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
@@ -56,7 +59,7 @@ export default async function LeadsPage({
     .range(offset, offset + PAGE_SIZE - 1)
 
   const computed = (leads ?? []).map(l => computeLeadFields(l))
-  const hasFilters = !!(sp.q || (sp.stadio && sp.stadio !== 'all') || (sp.origine && sp.origine !== 'all') || sp.contattato || sp.scaduto === '1')
+  const hasFilters = !!(sp.q || (sp.stadio && sp.stadio !== 'all') || (sp.origine && sp.origine !== 'all') || sp.contattato || (sp.stato_appuntamento && sp.stato_appuntamento !== 'all') || sp.scaduto === '1')
 
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
