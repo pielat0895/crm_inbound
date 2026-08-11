@@ -3,7 +3,7 @@ import {
   percent, winRateVintoPerso, weightedForecast, performanceByKey,
   distribuzioneEsiti, schedulingToCloseRate,
 } from './dashboard-metrics'
-import { makeLead } from './tasks.test'
+import { makeLead } from './test-fixtures'
 
 describe('percent', () => {
   it('rounds the ratio as a percentage', () => {
