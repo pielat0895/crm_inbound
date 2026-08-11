@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { STAGE_BADGE_CLASSES, STAGE_CHART_COLORS, STATO_BADGE_CLASSES, STATO_APPUNTAMENTO_BADGE_CLASSES, STATO_APPUNTAMENTO_CHART_COLORS } from './stage-colors'
-import { DEFAULT_PIPELINE_STAGES, STATO_OPTIONS, STATO_APPUNTAMENTO_OPTIONS } from '@/types'
+import { STAGE_BADGE_CLASSES, STAGE_CHART_COLORS, STATO_BADGE_CLASSES, STATO_APPUNTAMENTO_BADGE_CLASSES, STATO_APPUNTAMENTO_CHART_COLORS, STATO_TERMINALI_CHART_COLORS } from './stage-colors'
+import { DEFAULT_PIPELINE_STAGES, STATO_OPTIONS, STATO_APPUNTAMENTO_OPTIONS, STATO_TERMINALI } from '@/types'
 
 describe('stage-colors parity', () => {
   it('STAGE_BADGE_CLASSES has exactly the DEFAULT_PIPELINE_STAGES keys', () => {
@@ -21,5 +21,9 @@ describe('stage-colors parity', () => {
 
   it('STATO_APPUNTAMENTO_CHART_COLORS has exactly the STATO_APPUNTAMENTO_OPTIONS keys', () => {
     expect(Object.keys(STATO_APPUNTAMENTO_CHART_COLORS).sort()).toEqual([...STATO_APPUNTAMENTO_OPTIONS].sort())
+  })
+
+  it('STATO_TERMINALI_CHART_COLORS has exactly the STATO_TERMINALI keys', () => {
+    expect(Object.keys(STATO_TERMINALI_CHART_COLORS).sort()).toEqual([...STATO_TERMINALI].sort())
   })
 })

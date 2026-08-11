@@ -39,3 +39,12 @@ export const STATO_APPUNTAMENTO_CHART_COLORS: Record<string, string> = {
   'Effettuato':     '#10b981',
   'Non presentato': '#ef4444',
 }
+
+// Sottoinsieme di STATO_BADGE_CLASSES: solo gli esiti terminali, per il grafico "Distribuzione esiti".
+export const STATO_TERMINALI_CHART_COLORS: Record<string, string> = {
+  'Vinto':           '#10b981',
+  'Perso':           '#ef4444',
+  'Cliente':         '#14b8a6',
+  'Non qualificato': '#9ca3af',
+  'Studente':        '#64748b',
+}
