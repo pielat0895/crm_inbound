@@ -23,6 +23,7 @@ export type Lead = {
   owner: string | null
   data_apertura: string | null
   appuntamento: string | null
+  stato_appuntamento: string
   ricontattare: string | null
   data_ultimo_contatto: string | null
   data_chiusura: string | null
@@ -135,6 +136,11 @@ export const INDUSTRY_OPTIONS = [
 ]
 
 export const STATO_LEAD_OPTIONS = ['Attivo', 'In Attesa', 'Chiuso', 'Cliente']
+
+// Stato appuntamento: esito dell'appuntamento, indipendente dalla data/ora
+// del campo `appuntamento` — sempre una scelta manuale, nessuna deduzione
+// automatica dalla presenza o dal valore di quel campo.
+export const STATO_APPUNTAMENTO_OPTIONS = ['Non schedulato', 'Schedulato', 'Effettuato', 'Non presentato']
 
 export const ESPERIENZA_US_OPTIONS = [
   'Web (sito)',

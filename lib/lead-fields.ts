@@ -24,6 +24,7 @@ export const WRITABLE_LEAD_FIELDS = [
   'owner',
   'data_apertura',
   'appuntamento',
+  'stato_appuntamento',
   'ricontattare',
   'data_ultimo_contatto',
   'data_chiusura',
