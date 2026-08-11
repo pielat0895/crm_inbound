@@ -8,6 +8,7 @@ import { IndustryChart } from '@/components/dashboard/IndustryChart'
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
+import { AppuntamentoChart } from '@/components/dashboard/AppuntamentoChart'
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ export type SlimLead = {
   cognome: string | null
   azienda: string | null
   stadio_pipeline: string
+  stato_appuntamento: string
   valore: number | null
   industry: string | null
   dipendenti: string | null
@@ -37,6 +39,7 @@ type Props = {
   pipelineData: { stage: string; count: number; revenue: number }[]
   conversionChartData: { origine: string; tassoVinti: number; tassoNonVinti: number; tasso: number }[]
   ownerChartData: { name: string; value: number }[]
+  appuntamentoChartData: { stato: string; count: number }[]
   leads: SlimLead[]
 }
 
@@ -54,6 +57,7 @@ export function ChartsSection({
   pipelineData,
   conversionChartData,
   ownerChartData,
+  appuntamentoChartData,
   leads,
 }: Props) {
   const [modal, setModal] = useState<ModalState>({ open: false, title: '', leads: [] })
@@ -90,6 +94,10 @@ export function ChartsSection({
     ))
   }
 
+  function openAppuntamento(stato: string) {
+    open(`Stato appuntamento: ${stato}`, leads.filter(l => l.stato_appuntamento === stato))
+  }
+
   function openConversion(origine: string) {
     open(`Origine: ${origine}`, leads.filter(l =>
       origine === 'N/D' ? !l.origine : l.origine === origine
@@ -114,9 +122,15 @@ export function ChartsSection({
         </div>
       </div>
 
-      <div className="rounded-lg border p-4">
-        <h2 className="font-semibold mb-4">Lead per owner</h2>
-        <OwnerChart data={ownerChartData} onSegmentClick={openOwner} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Lead per owner</h2>
+          <OwnerChart data={ownerChartData} onSegmentClick={openOwner} />
+        </div>
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Stato appuntamento</h2>
+          <AppuntamentoChart data={appuntamentoChartData} onSegmentClick={openAppuntamento} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

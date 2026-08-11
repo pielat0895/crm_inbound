@@ -3,9 +3,9 @@ export const dynamic = 'force-dynamic'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { StatsCard } from '@/components/ui/StatsCard'
-import { computeLeadFields, STATO_TERMINALI } from '@/types'
+import { computeLeadFields, STATO_TERMINALI, STATO_APPUNTAMENTO_OPTIONS } from '@/types'
 import Link from 'next/link'
-import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target } from 'lucide-react'
+import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target, CalendarX } from 'lucide-react'
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
@@ -82,6 +82,20 @@ export default async function DashboardPage({
 
   const totalRevenue = wonLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
   const pipelineValue = openLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
+
+  // Tasso no-show: esclude Schedulato (esito non ancora noto) e Non schedulato
+  // (non applicabile) dal denominatore — risponde a "di chi arriva a un
+  // appuntamento, quanti non si presentano".
+  const nonPresentati = allLeads.filter(l => l.stato_appuntamento === 'Non presentato').length
+  const effettuati = allLeads.filter(l => l.stato_appuntamento === 'Effettuato').length
+  const noShowRate = (nonPresentati + effettuati) > 0
+    ? Math.round((nonPresentati / (nonPresentati + effettuati)) * 100)
+    : 0
+
+  const appuntamentoChartData = STATO_APPUNTAMENTO_OPTIONS.map(stato => ({
+    stato,
+    count: allLeads.filter(l => l.stato_appuntamento === stato).length,
+  }))
 
   const overdue = openLeads.filter(
     l => l.giorni_ultimo_contatto !== null && l.giorni_ultimo_contatto >= settings.followup_threshold_days
@@ -181,6 +195,7 @@ export default async function DashboardPage({
     cognome: l.cognome,
     azienda: l.azienda,
     stadio_pipeline: l.stadio_pipeline,
+    stato_appuntamento: l.stato_appuntamento,
     valore: l.valore,
     industry: l.industry,
     dipendenti: l.dipendenti,
@@ -210,13 +225,14 @@ export default async function DashboardPage({
         </Suspense>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-7">
         <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} icon={Users} color="blue" />
         <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti su ${allLeads.length}`} icon={TrendingUp} color="green" />
         <StatsCard title="Fatturato vinti" value={`€${totalRevenue.toLocaleString('it-IT')}`} subtitle={`${wonLeads.length} deal chiusi`} icon={Euro} color="green" />
         <StatsCard title="Pipeline aperta" value={`€${pipelineValue.toLocaleString('it-IT')}`} subtitle={`${openLeads.filter(l => l.valore).length} deal con valore`} icon={Target} color="blue" />
         <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} icon={Clock} color="amber" />
         <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} icon={AlertCircle} color="red" />
+        <StatsCard title="Tasso no-show" value={`${noShowRate}%`} subtitle={`${nonPresentati} su ${nonPresentati + effettuati} appuntamenti`} icon={CalendarX} color="red" />
       </div>
 
       <ChartsSection
@@ -227,6 +243,7 @@ export default async function DashboardPage({
         pipelineData={leadsByStage}
         conversionChartData={conversionChartData}
         ownerChartData={ownerChartData}
+        appuntamentoChartData={appuntamentoChartData}
         leads={slimLeads}
       />
 
