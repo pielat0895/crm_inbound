@@ -24,3 +24,18 @@ export const STATO_BADGE_CLASSES: Record<string, string> = {
   'Non qualificato': 'bg-gray-100 text-gray-600',
   'Studente':        'bg-slate-200 text-slate-700',
 }
+
+// Stato appuntamento: esito dell'appuntamento (4 valori, indipendente da stato/stadio).
+export const STATO_APPUNTAMENTO_BADGE_CLASSES: Record<string, string> = {
+  'Non schedulato': 'bg-gray-100 text-gray-600',
+  'Schedulato':     'bg-blue-100 text-blue-700',
+  'Effettuato':     'bg-green-100 text-green-700',
+  'Non presentato': 'bg-red-100 text-red-700',
+}
+
+export const STATO_APPUNTAMENTO_CHART_COLORS: Record<string, string> = {
+  'Non schedulato': '#9ca3af',
+  'Schedulato':     '#6366f1',
+  'Effettuato':     '#10b981',
+  'Non presentato': '#ef4444',
+}
