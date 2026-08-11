@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation'
 import { CalendarButton } from './CalendarButton'
 import { DeleteLeadButton } from './DeleteLeadButton'
 import { Mail, Phone, Building2, Euro, Clock } from 'lucide-react'
-import { STAGE_BADGE_CLASSES, STATO_BADGE_CLASSES } from '@/lib/stage-colors'
+import { STAGE_BADGE_CLASSES, STATO_BADGE_CLASSES, STATO_APPUNTAMENTO_BADGE_CLASSES } from '@/lib/stage-colors'
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -57,6 +57,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               {computed.stato && (
                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATO_BADGE_CLASSES[computed.stato] ?? 'bg-gray-100 text-gray-600'}`}>
                   {computed.stato}
+                </span>
+              )}
+              {computed.stato_appuntamento !== 'Non schedulato' && (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATO_APPUNTAMENTO_BADGE_CLASSES[computed.stato_appuntamento] ?? 'bg-gray-100 text-gray-600'}`}>
+                  {computed.stato_appuntamento}
                 </span>
               )}
               {computed.giorni_aperto !== null && (
