@@ -141,6 +141,7 @@ export const STATO_LEAD_OPTIONS = ['Attivo', 'In Attesa', 'Chiuso', 'Cliente']
 // del campo `appuntamento` — sempre una scelta manuale, nessuna deduzione
 // automatica dalla presenza o dal valore di quel campo.
 export const STATO_APPUNTAMENTO_OPTIONS = ['Non schedulato', 'Schedulato', 'Effettuato', 'Non presentato']
+export const STATO_APPUNTAMENTO_DEFAULT = STATO_APPUNTAMENTO_OPTIONS[0]
 
 export const ESPERIENZA_US_OPTIONS = [
   'Web (sito)',

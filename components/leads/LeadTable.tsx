@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { ChevronLeft, ChevronRight, Users, SearchX, Pencil, Trash2 } from 'lucide-react'
 import { STAGE_BADGE_CLASSES, STATO_BADGE_CLASSES, STATO_APPUNTAMENTO_BADGE_CLASSES } from '@/lib/stage-colors'
+import { STATO_APPUNTAMENTO_DEFAULT } from '@/types'
 
 type Props = {
   leads: LeadWithComputed[]
@@ -92,7 +93,7 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
                         {lead.stato}
                       </span>
                     )}
-                    {lead.stato_appuntamento !== 'Non schedulato' && (
+                    {lead.stato_appuntamento !== STATO_APPUNTAMENTO_DEFAULT && (
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATO_APPUNTAMENTO_BADGE_CLASSES[lead.stato_appuntamento] ?? 'bg-gray-100 text-gray-600'}`}>
                         {lead.stato_appuntamento}
                       </span>

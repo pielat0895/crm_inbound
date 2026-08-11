@@ -86,15 +86,15 @@ export default async function DashboardPage({
   // Tasso no-show: esclude Schedulato (esito non ancora noto) e Non schedulato
   // (non applicabile) dal denominatore — risponde a "di chi arriva a un
   // appuntamento, quanti non si presentano".
-  const nonPresentati = allLeads.filter(l => l.stato_appuntamento === 'Non presentato').length
-  const effettuati = allLeads.filter(l => l.stato_appuntamento === 'Effettuato').length
+  const nonPresentati = baseLeads.filter(l => l.stato_appuntamento === 'Non presentato').length
+  const effettuati = baseLeads.filter(l => l.stato_appuntamento === 'Effettuato').length
   const noShowRate = (nonPresentati + effettuati) > 0
     ? Math.round((nonPresentati / (nonPresentati + effettuati)) * 100)
     : 0
 
   const appuntamentoChartData = STATO_APPUNTAMENTO_OPTIONS.map(stato => ({
     stato,
-    count: allLeads.filter(l => l.stato_appuntamento === stato).length,
+    count: baseLeads.filter(l => l.stato_appuntamento === stato).length,
   }))
 
   const overdue = openLeads.filter(

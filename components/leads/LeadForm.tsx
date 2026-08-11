@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import type { LeadWithComputed } from '@/types'
-import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUSTRY_OPTIONS, STATO_LEAD_OPTIONS, STATO_OPTIONS, STATO_APPUNTAMENTO_OPTIONS, DIPENDENTI_OPTIONS } from '@/types'
+import { DEFAULT_PIPELINE_STAGES, ESPERIENZA_US_OPTIONS, ORIGINE_OPTIONS, INDUSTRY_OPTIONS, STATO_LEAD_OPTIONS, STATO_OPTIONS, STATO_APPUNTAMENTO_OPTIONS, STATO_APPUNTAMENTO_DEFAULT, DIPENDENTI_OPTIONS } from '@/types'
 
 type Props = {
   lead?: LeadWithComputed
@@ -68,7 +68,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
     owner: lead?.owner ?? '',
     data_apertura: lead?.data_apertura ?? '',
     appuntamento: lead?.appuntamento ? lead.appuntamento.slice(0, 16) : '',
-    stato_appuntamento: lead?.stato_appuntamento ?? 'Non schedulato',
+    stato_appuntamento: lead?.stato_appuntamento ?? STATO_APPUNTAMENTO_DEFAULT,
     ricontattare: lead?.ricontattare ?? '',
     numero_messaggi: lead?.numero_messaggi?.toString() ?? '0',
     data_chiusura: lead?.data_chiusura ?? '',
@@ -289,7 +289,7 @@ export function LeadForm({ lead, stages = DEFAULT_PIPELINE_STAGES, hideNote, onS
           <Field label="Appuntamento" name="appuntamento" type="datetime-local" form={form} set={set} />
           <div className="space-y-1">
             <Label>Stato appuntamento</Label>
-            <Select value={form.stato_appuntamento ?? 'Non schedulato'} onValueChange={v => set('stato_appuntamento', v ?? 'Non schedulato')}>
+            <Select value={form.stato_appuntamento} onValueChange={v => set('stato_appuntamento', v ?? STATO_APPUNTAMENTO_DEFAULT)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATO_APPUNTAMENTO_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}

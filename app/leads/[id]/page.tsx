@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
-import { computeLeadFields } from '@/types'
+import { computeLeadFields, STATO_APPUNTAMENTO_DEFAULT } from '@/types'
 import { LeadDetailTabs } from './LeadDetailTabs'
 import { Badge } from '@/components/ui/badge'
 import { notFound } from 'next/navigation'
@@ -59,7 +59,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   {computed.stato}
                 </span>
               )}
-              {computed.stato_appuntamento !== 'Non schedulato' && (
+              {computed.stato_appuntamento !== STATO_APPUNTAMENTO_DEFAULT && (
                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATO_APPUNTAMENTO_BADGE_CLASSES[computed.stato_appuntamento] ?? 'bg-gray-100 text-gray-600'}`}>
                   {computed.stato_appuntamento}
                 </span>
