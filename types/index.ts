@@ -69,6 +69,7 @@ export const TASK_PRIORITIES: TaskPriority[] = ['alta', 'media', 'bassa']
 export type Settings = {
   followup_threshold_days: number
   pipeline_stages: string[]
+  pipeline_stage_probabilities: Record<string, number>
 }
 
 // Stadio: posizione nel funnel prima della chiusura. Nessuno stato terminale

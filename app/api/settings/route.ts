@@ -24,6 +24,19 @@ export async function PATCH(request: NextRequest) {
     await updateSetting('pipeline_stages', JSON.stringify(body.pipeline_stages))
   }
 
+  if (body.pipeline_stage_probabilities !== undefined) {
+    const probs = body.pipeline_stage_probabilities
+    if (typeof probs !== 'object' || probs === null || Array.isArray(probs)) {
+      return NextResponse.json({ error: 'pipeline_stage_probabilities must be an object' }, { status: 400 })
+    }
+    for (const [stage, value] of Object.entries(probs)) {
+      if (typeof value !== 'number' || isNaN(value) || value < 0 || value > 100) {
+        return NextResponse.json({ error: `Invalid probability for stage "${stage}"` }, { status: 400 })
+      }
+    }
+    await updateSetting('pipeline_stage_probabilities', JSON.stringify(probs))
+  }
+
   const settings = await getSettings()
   return NextResponse.json(settings)
 }

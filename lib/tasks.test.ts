@@ -317,7 +317,7 @@ describe('buildDormienti', () => {
   })
 })
 
-const SETTINGS: Settings = { followup_threshold_days: 7, pipeline_stages: STAGES }
+const SETTINGS: Settings = { followup_threshold_days: 7, pipeline_stages: STAGES, pipeline_stage_probabilities: {} }
 const FILTERS = { upcomingDays: 7, closingDays: 30, dormantDays: 21, owner: null }
 
 describe('buildTaskFeed', () => {
