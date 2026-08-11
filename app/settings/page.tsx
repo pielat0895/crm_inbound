@@ -14,6 +14,9 @@ export default function SettingsPage() {
   const [threshold, setThreshold] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [probabilities, setProbabilities] = useState<Record<string, string>>({})
+  const [savingProbs, setSavingProbs] = useState(false)
+  const [savedProbs, setSavedProbs] = useState(false)
 
   // Reset DB
   const [confirmReset, setConfirmReset] = useState(false)
@@ -31,6 +34,11 @@ export default function SettingsPage() {
       .then((s: Settings) => {
         setSettings(s)
         setThreshold(String(s.followup_threshold_days))
+        const probs: Record<string, string> = {}
+        for (const stage of s.pipeline_stages) {
+          probs[stage] = String(s.pipeline_stage_probabilities[stage] ?? 0)
+        }
+        setProbabilities(probs)
       })
   }, [])
 
@@ -43,6 +51,22 @@ export default function SettingsPage() {
     })
     if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000) }
     setSaving(false)
+  }
+
+  async function handleSaveProbabilities() {
+    setSavingProbs(true)
+    const payload: Record<string, number> = {}
+    for (const [stage, value] of Object.entries(probabilities)) {
+      const n = parseInt(value, 10)
+      payload[stage] = isNaN(n) ? 0 : Math.min(100, Math.max(0, n))
+    }
+    const res = await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pipeline_stage_probabilities: payload }),
+    })
+    if (res.ok) { setSavedProbs(true); setTimeout(() => setSavedProbs(false), 2000) }
+    setSavingProbs(false)
   }
 
   async function handleReset() {
@@ -108,6 +132,33 @@ export default function SettingsPage() {
           </div>
           <Button onClick={handleSave} disabled={saving} size="sm">
             {saved ? 'Salvato!' : saving ? 'Salvataggio...' : 'Salva'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Probabilità di chiusura per stadio</CardTitle>
+          <CardDescription>Usata per il forecast pesato in dashboard. Stadi senza probabilità configurata contano 0%.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {settings.pipeline_stages.map(stage => (
+            <div key={stage} className="flex items-center gap-2">
+              <Label htmlFor={`prob-${stage}`} className="flex-1">{stage}</Label>
+              <Input
+                id={`prob-${stage}`}
+                type="number"
+                min={0}
+                max={100}
+                value={probabilities[stage] ?? '0'}
+                onChange={e => setProbabilities(p => ({ ...p, [stage]: e.target.value }))}
+                className="w-20"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+          ))}
+          <Button onClick={handleSaveProbabilities} disabled={savingProbs} size="sm">
+            {savedProbs ? 'Salvato!' : savingProbs ? 'Salvataggio...' : 'Salva'}
           </Button>
         </CardContent>
       </Card>
