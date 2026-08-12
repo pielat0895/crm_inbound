@@ -9,6 +9,8 @@ import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
 import { AppuntamentoChart } from '@/components/dashboard/AppuntamentoChart'
+import { OwnerConversionChart } from '@/components/dashboard/OwnerConversionChart'
+import { EsitiChart } from '@/components/dashboard/EsitiChart'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,7 @@ export type SlimLead = {
   cognome: string | null
   azienda: string | null
   stadio_pipeline: string
+  stato: string | null
   stato_appuntamento: string
   valore: number | null
   industry: string | null
@@ -40,6 +43,8 @@ type Props = {
   conversionChartData: { origine: string; tassoVinti: number; tassoNonVinti: number; tasso: number }[]
   ownerChartData: { name: string; value: number }[]
   appuntamentoChartData: { stato: string; count: number }[]
+  ownerConversionChartData: { owner: string; tassoVinti: number; tassoNonVinti: number; tasso: number }[]
+  esitiChartData: { stato: string; count: number }[]
   leads: SlimLead[]
 }
 
@@ -58,6 +63,8 @@ export function ChartsSection({
   conversionChartData,
   ownerChartData,
   appuntamentoChartData,
+  ownerConversionChartData,
+  esitiChartData,
   leads,
 }: Props) {
   const [modal, setModal] = useState<ModalState>({ open: false, title: '', leads: [] })
@@ -98,6 +105,10 @@ export function ChartsSection({
     open(`Stato appuntamento: ${stato}`, leads.filter(l => l.stato_appuntamento === stato))
   }
 
+  function openEsiti(stato: string) {
+    open(`Esito: ${stato}`, leads.filter(l => l.stato === stato))
+  }
+
   function openConversion(origine: string) {
     open(`Origine: ${origine}`, leads.filter(l =>
       origine === 'N/D' ? !l.origine : l.origine === origine
@@ -130,6 +141,17 @@ export function ChartsSection({
         <div className="rounded-lg border p-4">
           <h2 className="font-semibold mb-4">Stato appuntamento</h2>
           <AppuntamentoChart data={appuntamentoChartData} onSegmentClick={openAppuntamento} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Performance owner</h2>
+          <OwnerConversionChart data={ownerConversionChartData} onSegmentClick={openOwner} />
+        </div>
+        <div className="rounded-lg border p-4">
+          <h2 className="font-semibold mb-4">Distribuzione esiti</h2>
+          <EsitiChart data={esitiChartData} onSegmentClick={openEsiti} />
         </div>
       </div>
 
