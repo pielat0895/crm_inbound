@@ -21,9 +21,11 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Attivi + Vinto: stesso filtro di app/pipeline/page.tsx, così il polling
+  // non fa sparire le card Vinto che il caricamento iniziale mostra.
   const activeLeads = (data ?? [])
     .map(l => computeLeadFields(l))
-    .filter(isActiveLead)
+    .filter(l => isActiveLead(l) || l.stato === 'Vinto')
     .filter(l => l.stadio_pipeline !== 'Da sistemare')
   return NextResponse.json(activeLeads)
 }

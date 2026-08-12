@@ -24,9 +24,11 @@ type Props = {
 
 export function KanbanCard({ lead, threshold }: Props) {
   const router = useRouter()
+  const isVinto = lead.stato === 'Vinto'
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
     data: { lead },
+    disabled: isVinto,
   })
 
   const style = {
@@ -46,7 +48,7 @@ export function KanbanCard({ lead, threshold }: Props) {
       {...attributes}
       {...listeners}
       onClick={() => router.push(`/leads/${lead.id}`)}
-      className="rounded-md border bg-card p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow space-y-1.5"
+      className={`rounded-md border bg-card p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow space-y-1.5 ${isVinto ? 'border-l-4 border-l-green-500 opacity-90' : ''}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-sm leading-tight">
@@ -65,6 +67,11 @@ export function KanbanCard({ lead, threshold }: Props) {
         </p>
       )}
       <div className="flex gap-1.5 flex-wrap items-center">
+        {isVinto && (
+          <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
+            Vinto
+          </span>
+        )}
         {lead.origine && (
           <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${origineClass}`}>
             {lead.origine}

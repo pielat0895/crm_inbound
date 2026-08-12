@@ -13,7 +13,13 @@ export default async function PipelinePage() {
     getSettings(),
   ])
 
-  const computed = (leads ?? []).map(l => computeLeadFields(l)).filter(isActiveLead).filter(l => l.stadio_pipeline !== 'Da sistemare')
+  // Attivi + Vinto: i deal chiusi vinti restano visibili nella loro colonna
+  // finale (congelata), sola lettura. Gli altri esiti terminali (Perso,
+  // Cliente, Non qualificato, Studente) restano fuori dal board.
+  const computed = (leads ?? [])
+    .map(l => computeLeadFields(l))
+    .filter(l => isActiveLead(l) || l.stato === 'Vinto')
+    .filter(l => l.stadio_pipeline !== 'Da sistemare')
 
   return (
     <div className="space-y-4">
