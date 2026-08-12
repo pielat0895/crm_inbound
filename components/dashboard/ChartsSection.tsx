@@ -126,8 +126,9 @@ export function ChartsSection({
     ))
   }
 
+  // Stato appuntamento: coorte apertura (allLeads in page.tsx, come noShowRate) → rispetta il range date.
   function openAppuntamento(stato: string) {
-    open(`Stato appuntamento: ${stato}`, leads.filter(l => l.stato_appuntamento === stato))
+    open(`Stato appuntamento: ${stato}`, leads.filter(l => l.stato_appuntamento === stato && inRange(l.data_apertura)))
   }
 
   // Distribuzione esiti: coorte chiusura (closedInRange in page.tsx) → filtro su data_chiusura.

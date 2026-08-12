@@ -90,16 +90,17 @@ export default async function DashboardPage({
   const pipelineValue = openLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
   const forecastPesato = weightedForecast(openLeads, settings.pipeline_stage_probabilities)
 
-  // Tasso no-show: esclude Schedulato (esito non ancora noto) e Non schedulato
-  // (non applicabile) dal denominatore — risponde a "di chi arriva a un
-  // appuntamento, quanti non si presentano".
-  const nonPresentati = baseLeads.filter(l => l.stato_appuntamento === 'Non presentato').length
-  const effettuati = baseLeads.filter(l => l.stato_appuntamento === 'Effettuato').length
+  // Tasso no-show (coorte apertura, come Conversione lead — rispetta il
+  // range di giorni selezionato): esclude Schedulato (esito non ancora noto)
+  // e Non schedulato (non applicabile) dal denominatore — risponde a "di chi
+  // arriva a un appuntamento, quanti non si presentano".
+  const nonPresentati = allLeads.filter(l => l.stato_appuntamento === 'Non presentato').length
+  const effettuati = allLeads.filter(l => l.stato_appuntamento === 'Effettuato').length
   const noShowRate = percent(nonPresentati, nonPresentati + effettuati)
 
   const appuntamentoChartData = STATO_APPUNTAMENTO_OPTIONS.map(stato => ({
     stato,
-    count: baseLeads.filter(l => l.stato_appuntamento === stato).length,
+    count: allLeads.filter(l => l.stato_appuntamento === stato).length,
   }))
 
   // Tasso scheduling→chiusura: tra i lead chiusi (Vinto/Perso) che hanno fatto l'appuntamento.
