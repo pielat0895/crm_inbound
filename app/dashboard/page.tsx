@@ -5,13 +5,15 @@ import { getSettings } from '@/lib/settings'
 import { StatsCard } from '@/components/ui/StatsCard'
 import { computeLeadFields, STATO_TERMINALI, STATO_APPUNTAMENTO_OPTIONS } from '@/types'
 import Link from 'next/link'
-import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target, CalendarX } from 'lucide-react'
+import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target, CalendarX, Award, Gauge, CalendarCheck } from 'lucide-react'
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { ConversionChart } from '@/components/dashboard/ConversionChart'
 import { ChartsSection } from '@/components/dashboard/ChartsSection'
 import type { SlimLead } from '@/components/dashboard/ChartsSection'
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters'
+import { percent, winRateVintoPerso, weightedForecast, performanceByKey, distribuzioneEsiti, schedulingToCloseRate } from '@/lib/dashboard-metrics'
+import { leadARischio } from '@/lib/tasks'
 import { Suspense } from 'react'
 
 function getDateRange(range: string | null, from: string | null, to: string | null): { start: Date | null; end: Date | null } {
@@ -63,17 +65,21 @@ export default async function DashboardPage({
     return true
   }
 
+  // Coorte apertura: lead aperti nel periodo, esito attuale qualunque sia oggi.
   const allLeads = baseLeads.filter(l => filterByDate(l, l.data_apertura))
-  // openLeads uses baseLeads (owner/stadio/origine filtered) but ignores date
   const openLeads = baseLeads.filter(l => !STATO_TERMINALI.includes(l.stato ?? ''))
-  // Won leads filtered by close date, not open date
-  const wonLeads = baseLeads.filter(l =>
-    l.stato === 'Vinto' && filterByDate(l, l.data_chiusura)
-  )
 
-  const conversionRate = allLeads.length > 0
-    ? Math.round((wonLeads.length / allLeads.length) * 100)
-    : 0
+  // Coorte chiusura: lead chiusi (data_chiusura) nel periodo.
+  const closedInRange = baseLeads.filter(l => filterByDate(l, l.data_chiusura))
+  const closedDecisive = closedInRange.filter(l => l.stato === 'Vinto' || l.stato === 'Perso')
+  const wonLeads = closedInRange.filter(l => l.stato === 'Vinto')
+
+  // Conversione lead (coorte apertura): quota di lead aperti nel periodo che sono OGGI Vinto.
+  const leadWonToday = allLeads.filter(l => l.stato === 'Vinto').length
+  const conversioneLeadRate = percent(leadWonToday, allLeads.length)
+
+  // Win rate (coorte chiusura): tra i lead chiusi con esito Vinto/Perso, quota Vinto.
+  const { vinti: winVinti, rate: winRate } = winRateVintoPerso(closedDecisive)
 
   const wonWithDays = wonLeads.filter(l => l.giorni_pipeline !== null)
   const avgDaysToClose = wonWithDays.length > 0
@@ -82,24 +88,26 @@ export default async function DashboardPage({
 
   const totalRevenue = wonLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
   const pipelineValue = openLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
+  const forecastPesato = weightedForecast(openLeads, settings.pipeline_stage_probabilities)
 
   // Tasso no-show: esclude Schedulato (esito non ancora noto) e Non schedulato
   // (non applicabile) dal denominatore — risponde a "di chi arriva a un
   // appuntamento, quanti non si presentano".
   const nonPresentati = baseLeads.filter(l => l.stato_appuntamento === 'Non presentato').length
   const effettuati = baseLeads.filter(l => l.stato_appuntamento === 'Effettuato').length
-  const noShowRate = (nonPresentati + effettuati) > 0
-    ? Math.round((nonPresentati / (nonPresentati + effettuati)) * 100)
-    : 0
+  const noShowRate = percent(nonPresentati, nonPresentati + effettuati)
 
   const appuntamentoChartData = STATO_APPUNTAMENTO_OPTIONS.map(stato => ({
     stato,
     count: baseLeads.filter(l => l.stato_appuntamento === stato).length,
   }))
 
-  const overdue = openLeads.filter(
-    l => l.giorni_ultimo_contatto !== null && l.giorni_ultimo_contatto >= settings.followup_threshold_days
-  )
+  // Tasso scheduling→chiusura: tra i lead chiusi (Vinto/Perso) che hanno fatto l'appuntamento.
+  const { vinti: schedVinti, totale: schedTotale, rate: schedulingToCloseRateValue } = schedulingToCloseRate(closedDecisive)
+
+  const esitiChartData = distribuzioneEsiti(closedInRange, STATO_TERMINALI)
+
+  const rischio = leadARischio(openLeads, new Date(), settings.followup_threshold_days)
 
   const today = new Date().toISOString().split('T')[0]
   const todayFollowups = openLeads.filter(l => l.ricontattare === today)
@@ -109,16 +117,6 @@ export default async function DashboardPage({
     const revenue = stageLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
     return { stage, count: stageLeads.length, revenue }
   })
-
-  const leadsByOrigine: Record<string, number> = {}
-  for (const lead of allLeads) {
-    if (lead.origine) leadsByOrigine[lead.origine] = (leadsByOrigine[lead.origine] ?? 0) + 1
-  }
-
-  const conversionePerOrigine = Object.entries(leadsByOrigine).map(([origine, totale]) => {
-    const vinti = wonLeads.filter(l => l.origine === origine).length
-    return { origine, totale, vinti, tasso: Math.round((vinti / totale) * 100) }
-  }).sort((a, b) => b.tasso - a.tasso)
 
   // Trend uses filtered leads
   const trendMensile: Record<string, number> = {}
@@ -138,11 +136,26 @@ export default async function DashboardPage({
     return { label, count, media, month }
   })
 
-  const conversionChartData = conversionePerOrigine.map(({ origine, totale, vinti }) => ({
-    origine,
-    tassoVinti: Math.round((vinti / totale) * 100),
-    tassoNonVinti: Math.round(((totale - vinti) / totale) * 100),
-    tasso: Math.round((vinti / totale) * 100),
+  // Conversione per origine (coorte apertura, stesso principio di conversioneLeadRate).
+  // I lead senza origine restano esclusi dal grafico, come nel comportamento precedente.
+  const conversionePerOrigine = performanceByKey(allLeads.filter(l => l.origine), l => l.origine)
+    .sort((a, b) => b.tasso - a.tasso)
+
+  const conversionChartData = conversionePerOrigine.map(({ key, tasso }) => ({
+    origine: key,
+    tassoVinti: tasso,
+    tassoNonVinti: 100 - tasso,
+    tasso,
+  }))
+
+  // Performance owner (coorte apertura). A differenza di conversionePerOrigine, i lead
+  // senza owner finiscono nel bucket "N/D" — stessa convenzione del grafico "Lead per owner".
+  const performancePerOwner = performanceByKey(allLeads, l => l.owner).sort((a, b) => b.tasso - a.tasso)
+  const ownerConversionChartData = performancePerOwner.map(({ key, tasso }) => ({
+    owner: key,
+    tassoVinti: tasso,
+    tassoNonVinti: 100 - tasso,
+    tasso,
   }))
 
   // Sito chart data
@@ -195,6 +208,7 @@ export default async function DashboardPage({
     cognome: l.cognome,
     azienda: l.azienda,
     stadio_pipeline: l.stadio_pipeline,
+    stato: l.stato,
     stato_appuntamento: l.stato_appuntamento,
     valore: l.valore,
     industry: l.industry,
@@ -225,14 +239,17 @@ export default async function DashboardPage({
         </Suspense>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-5">
         <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} icon={Users} color="blue" />
-        <StatsCard title="Tasso conversione" value={`${conversionRate}%`} subtitle={`${wonLeads.length} vinti su ${allLeads.length}`} icon={TrendingUp} color="green" />
+        <StatsCard title="Conversione lead" value={`${conversioneLeadRate}%`} subtitle={`${leadWonToday} vinti su ${allLeads.length} aperti`} icon={TrendingUp} color="green" />
+        <StatsCard title="Win rate" value={`${winRate}%`} subtitle={`${winVinti} vinti su ${closedDecisive.length} chiusi`} icon={Award} color="green" />
         <StatsCard title="Fatturato vinti" value={`€${totalRevenue.toLocaleString('it-IT')}`} subtitle={`${wonLeads.length} deal chiusi`} icon={Euro} color="green" />
         <StatsCard title="Pipeline aperta" value={`€${pipelineValue.toLocaleString('it-IT')}`} subtitle={`${openLeads.filter(l => l.valore).length} deal con valore`} icon={Target} color="blue" />
+        <StatsCard title="Forecast pesato" value={`€${Math.round(forecastPesato).toLocaleString('it-IT')}`} subtitle="pipeline × probabilità stadio" icon={Gauge} color="amber" />
         <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} icon={Clock} color="amber" />
-        <StatsCard title="Scaduti follow-up" value={overdue.length} subtitle={`soglia: ${settings.followup_threshold_days}gg`} icon={AlertCircle} color="red" />
+        <StatsCard title="Lead a rischio" value={rischio.length} subtitle={`fermi da ${settings.followup_threshold_days}+ gg`} icon={AlertCircle} color="red" />
         <StatsCard title="Tasso no-show" value={`${noShowRate}%`} subtitle={`${nonPresentati} su ${nonPresentati + effettuati} appuntamenti`} icon={CalendarX} color="red" />
+        <StatsCard title="Scheduling→chiusura" value={`${schedulingToCloseRateValue}%`} subtitle={`${schedVinti} vinti su ${schedTotale} effettuati`} icon={CalendarCheck} color="green" />
       </div>
 
       <ChartsSection
@@ -243,7 +260,9 @@ export default async function DashboardPage({
         pipelineData={leadsByStage}
         conversionChartData={conversionChartData}
         ownerChartData={ownerChartData}
+        ownerConversionChartData={ownerConversionChartData}
         appuntamentoChartData={appuntamentoChartData}
+        esitiChartData={esitiChartData}
         leads={slimLeads}
       />
 
@@ -332,14 +351,14 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {overdue.length > 0 && (
+      {rischio.length > 0 && (
         <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-          <h2 className="font-semibold text-orange-800 mb-3">Da ricontattare ({overdue.length})</h2>
+          <h2 className="font-semibold text-orange-800 mb-3">Lead a rischio ({rischio.length})</h2>
           <div className="space-y-1">
-            {overdue.slice(0, 10).map(lead => (
+            {rischio.slice(0, 10).map(({ lead, giorni, maiContattato }) => (
               <Link key={lead.id} href={`/leads/${lead.id}`} className="flex justify-between text-sm hover:underline">
                 <span>{lead.nome} {lead.cognome} — {lead.azienda}</span>
-                <span className="text-orange-600">{lead.giorni_ultimo_contatto}gg fa</span>
+                <span className="text-orange-600">{maiContattato ? `mai contattato, ${giorni}gg` : `${giorni}gg fa`}</span>
               </Link>
             ))}
           </div>
