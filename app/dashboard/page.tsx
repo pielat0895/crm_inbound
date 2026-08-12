@@ -202,7 +202,11 @@ export default async function DashboardPage({
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  const slimLeads: SlimLead[] = allLeadsRaw.map(l => ({
+  // baseLeads (non allLeadsRaw): i drill-down dei grafici devono rispettare
+  // gli stessi filtri owner/stadio/origine applicati ai grafici stessi.
+  // Il range di date viene applicato lato client in ChartsSection, perché
+  // cambia a seconda della coorte del grafico cliccato (apertura vs chiusura).
+  const slimLeads: SlimLead[] = baseLeads.map(l => ({
     id: l.id,
     nome: l.nome,
     cognome: l.cognome,
@@ -215,6 +219,7 @@ export default async function DashboardPage({
     dipendenti: l.dipendenti,
     origine: l.origine,
     data_apertura: l.data_apertura,
+    data_chiusura: l.data_chiusura,
     owner: l.owner,
   }))
 
@@ -263,6 +268,8 @@ export default async function DashboardPage({
         ownerConversionChartData={ownerConversionChartData}
         appuntamentoChartData={appuntamentoChartData}
         esitiChartData={esitiChartData}
+        dateRangeStart={start}
+        dateRangeEnd={end}
         leads={slimLeads}
       />
 

@@ -31,6 +31,7 @@ export type SlimLead = {
   dipendenti: string | null
   origine: string | null
   data_apertura: string | null
+  data_chiusura: string | null
   owner: string | null
 }
 
@@ -45,6 +46,8 @@ type Props = {
   appuntamentoChartData: { stato: string; count: number }[]
   ownerConversionChartData: { owner: string; tassoVinti: number; tassoNonVinti: number; tasso: number }[]
   esitiChartData: { stato: string; count: number }[]
+  dateRangeStart: Date | null
+  dateRangeEnd: Date | null
   leads: SlimLead[]
 }
 
@@ -65,12 +68,25 @@ export function ChartsSection({
   appuntamentoChartData,
   ownerConversionChartData,
   esitiChartData,
+  dateRangeStart,
+  dateRangeEnd,
   leads,
 }: Props) {
   const [modal, setModal] = useState<ModalState>({ open: false, title: '', leads: [] })
 
   function open(title: string, filtered: SlimLead[]) {
     setModal({ open: true, title, leads: filtered })
+  }
+
+  // Stesso principio di filterByDate in app/dashboard/page.tsx: replica qui
+  // il filtro sul range di date attivo, per i grafici la cui coorte lo usa.
+  function inRange(dateField: string | null): boolean {
+    if (!dateRangeStart && !dateRangeEnd) return true
+    if (!dateField) return false
+    const d = new Date(dateField)
+    if (dateRangeStart && d < dateRangeStart) return false
+    if (dateRangeEnd && d > dateRangeEnd) return false
+    return true
   }
 
   function openDipendenti(range: string) {
@@ -87,17 +103,26 @@ export function ChartsSection({
 
   function openTrend(month: string, label: string) {
     open(`Lead aperti: ${label}`, leads.filter(l =>
-      l.data_apertura?.slice(0, 7) === month
+      l.data_apertura?.slice(0, 7) === month && inRange(l.data_apertura)
     ))
   }
 
+  // Pipeline per stadio: coorte apertura (allLeads in page.tsx) → rispetta il range date.
   function openPipeline(stage: string) {
-    open(`Stadio: ${stage}`, leads.filter(l => l.stadio_pipeline === stage))
+    open(`Stadio: ${stage}`, leads.filter(l => l.stadio_pipeline === stage && inRange(l.data_apertura)))
   }
 
+  // Lead per owner (conteggio grezzo): coorte baseLeads in page.tsx → nessun filtro data.
   function openOwner(name: string) {
     open(`Owner: ${name}`, leads.filter(l =>
       name === 'N/D' ? !l.owner : l.owner === name
+    ))
+  }
+
+  // Performance owner: coorte apertura (allLeads in page.tsx) → rispetta il range date.
+  function openOwnerPerformance(name: string) {
+    open(`Owner: ${name}`, leads.filter(l =>
+      (name === 'N/D' ? !l.owner : l.owner === name) && inRange(l.data_apertura)
     ))
   }
 
@@ -105,13 +130,15 @@ export function ChartsSection({
     open(`Stato appuntamento: ${stato}`, leads.filter(l => l.stato_appuntamento === stato))
   }
 
+  // Distribuzione esiti: coorte chiusura (closedInRange in page.tsx) → filtro su data_chiusura.
   function openEsiti(stato: string) {
-    open(`Esito: ${stato}`, leads.filter(l => l.stato === stato))
+    open(`Esito: ${stato}`, leads.filter(l => l.stato === stato && inRange(l.data_chiusura)))
   }
 
+  // Conversione per origine: coorte apertura (allLeads in page.tsx) → rispetta il range date.
   function openConversion(origine: string) {
     open(`Origine: ${origine}`, leads.filter(l =>
-      origine === 'N/D' ? !l.origine : l.origine === origine
+      (origine === 'N/D' ? !l.origine : l.origine === origine) && inRange(l.data_apertura)
     ))
   }
 
@@ -147,7 +174,7 @@ export function ChartsSection({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-lg border p-4">
           <h2 className="font-semibold mb-4">Performance owner</h2>
-          <OwnerConversionChart data={ownerConversionChartData} onSegmentClick={openOwner} />
+          <OwnerConversionChart data={ownerConversionChartData} onSegmentClick={openOwnerPerformance} />
         </div>
         <div className="rounded-lg border p-4">
           <h2 className="font-semibold mb-4">Distribuzione esiti</h2>
