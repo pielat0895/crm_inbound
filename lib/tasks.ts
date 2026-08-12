@@ -231,6 +231,29 @@ export function giorniFermo(
   return { giorni, riferimento, maiContattato: true }
 }
 
+export type LeadARischio = { lead: LeadWithComputed; giorni: number; maiContattato: boolean }
+
+/**
+ * Lead attivi fermi da almeno thresholdDays giorni, incluso chi non è mai
+ * stato contattato (fermo dalla data apertura, non invisibile per mancanza
+ * di giorni_ultimo_contatto — stessa logica di giorniFermo).
+ */
+export function leadARischio(
+  leads: LeadWithComputed[],
+  now: Date,
+  thresholdDays: number,
+): LeadARischio[] {
+  const result: LeadARischio[] = []
+  for (const lead of leads) {
+    if (!isActiveLead(lead)) continue
+    const { giorni, maiContattato } = giorniFermo(lead, now)
+    if (giorni !== null && giorni >= thresholdDays) {
+      result.push({ lead, giorni, maiContattato })
+    }
+  }
+  return result.sort((a, b) => b.giorni - a.giorni)
+}
+
 /** Sezione "Dormienti": lead fermi da troppo tempo e senza nulla di pianificato. */
 export function buildDormienti(
   leads: LeadWithComputed[],

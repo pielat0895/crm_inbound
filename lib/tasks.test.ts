@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo, buildProssimiChiusura, buildDormienti, buildTaskFeed } from './tasks'
+import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo, buildProssimiChiusura, buildDormienti, buildTaskFeed, leadARischio } from './tasks'
 import type { Task, Settings } from '@/types'
 import { REF, baseLead, makeLead } from './test-fixtures'
 
@@ -296,6 +296,42 @@ describe('buildDormienti', () => {
   it('excludes closed and client stages', () => {
     const leads = [makeLead({ id: 'l-1', stato: 'Cliente', data_ultimo_contatto: '2026-01-01' })]
     expect(buildDormienti(leads, [], REF, 21, new Set(), new Set())).toEqual([])
+  })
+})
+
+describe('leadARischio', () => {
+  it('includes an active lead stalled past the threshold', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: '2026-07-01' })] // 26 giorni da REF
+    const result = leadARischio(leads, REF, 21)
+    expect(result).toHaveLength(1)
+    expect(result[0].lead.id).toBe('l-1')
+    expect(result[0].giorni).toBe(26)
+    expect(result[0].maiContattato).toBe(false)
+  })
+
+  it('includes a never-contacted lead stalled since data_apertura', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: null, data_apertura: '2026-06-27' })] // 30 giorni
+    const result = leadARischio(leads, REF, 21)
+    expect(result).toEqual([{ lead: leads[0], giorni: 30, maiContattato: true }])
+  })
+
+  it('excludes a lead below the threshold', () => {
+    const leads = [makeLead({ id: 'l-1', data_ultimo_contatto: '2026-07-20' })] // 7 giorni
+    expect(leadARischio(leads, REF, 21)).toEqual([])
+  })
+
+  it('excludes a closed lead regardless of how stale', () => {
+    const leads = [makeLead({ id: 'l-1', stato: 'Perso', data_ultimo_contatto: '2026-01-01' })]
+    expect(leadARischio(leads, REF, 21)).toEqual([])
+  })
+
+  it('sorts by giorni descending', () => {
+    const leads = [
+      makeLead({ id: 'meno-fermo', data_ultimo_contatto: '2026-07-01' }), // 26
+      makeLead({ id: 'piu-fermo', data_ultimo_contatto: '2026-06-01' }),  // 56
+    ]
+    const result = leadARischio(leads, REF, 21)
+    expect(result.map(r => r.lead.id)).toEqual(['piu-fermo', 'meno-fermo'])
   })
 })
 
