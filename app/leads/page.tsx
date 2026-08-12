@@ -9,6 +9,8 @@ import { LeadFilters } from '@/components/leads/LeadFilters'
 import { LeadQuickStats } from '@/components/leads/LeadQuickStats'
 import { STATO_TERMINALI } from '@/types'
 import { Suspense } from 'react'
+import Link from 'next/link'
+import { Wrench } from 'lucide-react'
 
 const PAGE_SIZE = 50
 
@@ -64,16 +66,28 @@ export default async function LeadsPage({
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
 
-  const [{ count: countAttivi }, { count: countScaduti }] = await Promise.all([
+  const [{ count: countAttivi }, { count: countScaduti }, { count: countDaSistemare }] = await Promise.all([
     supabase.from('leads').select('*', { count: 'exact', head: true }).or(`stato.is.null,stato.not.in.(${STATO_TERMINALI.map(s => `"${s}"`).join(',')})`),
     supabase.from('leads').select('*', { count: 'exact', head: true }).not('data_ultimo_contatto', 'is', null).lte('data_ultimo_contatto', cutoff.toISOString().split('T')[0]),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('stadio_pipeline', 'Da sistemare'),
   ])
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold">Lead</h1>
-        <LeadQuickStats total={count ?? 0} attivi={countAttivi ?? 0} scaduti={countScaduti ?? 0} />
+        <div className="flex items-center gap-4">
+          {(countDaSistemare ?? 0) > 0 && (
+            <Link
+              href="/leads/da-sistemare"
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800 hover:bg-amber-200 transition-colors"
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              {countDaSistemare} da sistemare
+            </Link>
+          )}
+          <LeadQuickStats total={count ?? 0} attivi={countAttivi ?? 0} scaduti={countScaduti ?? 0} />
+        </div>
       </div>
       <Suspense>
         <LeadFilters stages={settings.pipeline_stages} leads={computed} />
