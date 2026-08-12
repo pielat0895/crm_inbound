@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { toDateString, addDays, isActiveLead, advancedStages, buildDaFareOra, buildInArrivo, buildProssimiChiusura, buildDormienti, buildTaskFeed, leadARischio } from './tasks'
 import type { Task, Settings } from '@/types'
-import { REF, baseLead, makeLead } from './test-fixtures'
+import { REF, makeLead } from './test-fixtures'
 
 describe('toDateString', () => {
   it('formats a local date as YYYY-MM-DD', () => {

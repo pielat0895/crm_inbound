@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { computeLeadFields, STATO_TERMINALI } from '@/types'
 import { sendOverdueDigest } from '@/lib/email'
+import { leadARischio } from '@/lib/tasks'
 
 export async function GET(request: NextRequest) {
   const cronSecret = request.headers.get('authorization')
@@ -18,9 +19,7 @@ export async function GET(request: NextRequest) {
   ])
 
   const computed = (leads ?? []).map(l => computeLeadFields(l))
-  const overdue = computed.filter(
-    l => l.giorni_ultimo_contatto !== null && l.giorni_ultimo_contatto >= settings.followup_threshold_days
-  )
+  const overdue = leadARischio(computed, new Date(), settings.followup_threshold_days)
 
   try {
     await sendOverdueDigest(overdue)
