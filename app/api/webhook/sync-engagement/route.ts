@@ -7,6 +7,7 @@ type EngagementItem = {
   data_ultimo_contatto?: string
   risposto_ultima_mail?: boolean
   touchpoints?: number
+  numero_messaggi?: number
 }
 
 export async function PATCH(request: NextRequest) {
@@ -30,10 +31,11 @@ export async function PATCH(request: NextRequest) {
     if (item.data_ultimo_contatto !== undefined) patch.data_ultimo_contatto = item.data_ultimo_contatto
     if (item.risposto_ultima_mail !== undefined) patch.risposto_ultima_mail = item.risposto_ultima_mail
     if (item.touchpoints !== undefined) patch.touchpoints = item.touchpoints
+    if (item.numero_messaggi !== undefined) patch.numero_messaggi = item.numero_messaggi
 
     const { error, count } = await supabase
       .from('leads')
-      .update(patch)
+      .update(patch, { count: 'exact' })
       .eq('email', item.email)
 
     if (!error && count && count > 0) updated++
