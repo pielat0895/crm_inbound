@@ -17,7 +17,7 @@ const PAGE_SIZE = 50
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; stadio?: string; origine?: string; contattato?: string; stato_appuntamento?: string; scaduto?: string; page?: string; sortBy?: string; sortDir?: string }>
+  searchParams: Promise<{ q?: string; stadio?: string; origine?: string; contattato?: string; stato_appuntamento?: string; scaduto?: string; owner?: string; apertura_da?: string; apertura_a?: string; chiusura_da?: string; chiusura_a?: string; page?: string; sortBy?: string; sortDir?: string }>
 }) {
   const sp = await searchParams
   const page = Math.max(1, parseInt(sp.page ?? '1', 10))
@@ -55,13 +55,23 @@ export default async function LeadsPage({
     query = query.not('data_ultimo_contatto', 'is', null)
       .lte('data_ultimo_contatto', cutoff.toISOString().split('T')[0])
   }
+  if (sp.owner && sp.owner !== 'all') {
+    query = query.eq('owner', sp.owner)
+  }
+  if (sp.apertura_da) query = query.gte('data_apertura', sp.apertura_da)
+  if (sp.apertura_a) query = query.lte('data_apertura', sp.apertura_a)
+  if (sp.chiusura_da) query = query.gte('data_chiusura', sp.chiusura_da)
+  if (sp.chiusura_a) query = query.lte('data_chiusura', sp.chiusura_a)
 
   const { data: leads, count } = await query
     .order(sortBy, { ascending: sortDir, nullsFirst: false })
     .range(offset, offset + PAGE_SIZE - 1)
 
   const computed = (leads ?? []).map(l => computeLeadFields(l))
-  const hasFilters = !!(sp.q || (sp.stadio && sp.stadio !== 'all') || (sp.origine && sp.origine !== 'all') || sp.contattato || (sp.stato_appuntamento && sp.stato_appuntamento !== 'all') || sp.scaduto === '1')
+  const hasFilters = !!(sp.q || (sp.stadio && sp.stadio !== 'all') || (sp.origine && sp.origine !== 'all') || sp.contattato || (sp.stato_appuntamento && sp.stato_appuntamento !== 'all') || sp.scaduto === '1' || (sp.owner && sp.owner !== 'all') || sp.apertura_da || sp.apertura_a || sp.chiusura_da || sp.chiusura_a)
+
+  const { data: ownerRows } = await supabase.from('leads').select('owner').not('owner', 'is', null)
+  const availableOwners = [...new Set((ownerRows ?? []).map(r => r.owner as string))].sort()
 
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
@@ -90,7 +100,7 @@ export default async function LeadsPage({
         </div>
       </div>
       <Suspense>
-        <LeadFilters stages={settings.pipeline_stages} leads={computed} />
+        <LeadFilters stages={settings.pipeline_stages} owners={availableOwners} leads={computed} />
       </Suspense>
       <LeadTable
         leads={computed}

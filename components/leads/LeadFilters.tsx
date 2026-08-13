@@ -10,10 +10,11 @@ import { ORIGINE_OPTIONS, STATO_APPUNTAMENTO_OPTIONS } from '@/types'
 
 type Props = {
   stages: string[]
+  owners: string[]
   leads: LeadWithComputed[]
 }
 
-export function LeadFilters({ stages, leads }: Props) {
+export function LeadFilters({ stages, owners, leads }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -24,8 +25,14 @@ export function LeadFilters({ stages, leads }: Props) {
   const contattato = params.get('contattato') ?? 'all'
   const statoAppuntamento = params.get('stato_appuntamento') ?? 'all'
   const scaduto = params.get('scaduto') === '1'
+  const owner = params.get('owner') ?? 'all'
+  const aperturaDa = params.get('apertura_da') ?? ''
+  const aperturaA = params.get('apertura_a') ?? ''
+  const chiusuraDa = params.get('chiusura_da') ?? ''
+  const chiusuraA = params.get('chiusura_a') ?? ''
 
   const hasFilters = q || stadio !== 'all' || origine !== 'all' || contattato !== 'all' || statoAppuntamento !== 'all' || scaduto
+    || owner !== 'all' || aperturaDa || aperturaA || chiusuraDa || chiusuraA
 
   const update = useCallback((updates: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString())
@@ -92,6 +99,17 @@ export function LeadFilters({ stages, leads }: Props) {
           <SelectContent>
             <SelectItem value="all">Tutti gli stadi</SelectItem>
             {stages.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            <SelectItem value="Da sistemare">Da sistemare</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={owner} onValueChange={v => update({ owner: v })}>
+          <SelectTrigger className="w-40 h-8 text-sm">
+            <SelectValue placeholder="Owner" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti gli owner</SelectItem>
+            {owners.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
           </SelectContent>
         </Select>
 
@@ -134,6 +152,40 @@ export function LeadFilters({ stages, leads }: Props) {
         >
           Follow-up scaduto
         </Button>
+
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground">Apertura:</span>
+          <Input
+            type="date"
+            value={aperturaDa}
+            onChange={e => update({ apertura_da: e.target.value || null })}
+            className="h-8 text-sm w-36"
+          />
+          <span className="text-xs text-muted-foreground">→</span>
+          <Input
+            type="date"
+            value={aperturaA}
+            onChange={e => update({ apertura_a: e.target.value || null })}
+            className="h-8 text-sm w-36"
+          />
+        </div>
+
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground">Chiusura:</span>
+          <Input
+            type="date"
+            value={chiusuraDa}
+            onChange={e => update({ chiusura_da: e.target.value || null })}
+            className="h-8 text-sm w-36"
+          />
+          <span className="text-xs text-muted-foreground">→</span>
+          <Input
+            type="date"
+            value={chiusuraA}
+            onChange={e => update({ chiusura_a: e.target.value || null })}
+            className="h-8 text-sm w-36"
+          />
+        </div>
 
         {hasFilters && (
           <Button variant="ghost" size="sm" className="h-8 text-sm" onClick={reset}>
