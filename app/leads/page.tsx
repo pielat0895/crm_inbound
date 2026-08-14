@@ -54,6 +54,9 @@ export default async function LeadsPage({
     cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
     query = query.not('data_ultimo_contatto', 'is', null)
       .lte('data_ultimo_contatto', cutoff.toISOString().split('T')[0])
+      // stato_lead Chiuso = niente follow-up, anche se il contatto è vecchio.
+      // .neq è NULL-unsafe in Postgres, quindi va esplicitato l'OR sul null.
+      .or('stato_lead.is.null,stato_lead.neq.Chiuso')
   }
   if (sp.owner && sp.owner !== 'all') {
     query = query.eq('owner', sp.owner)

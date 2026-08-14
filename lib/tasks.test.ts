@@ -325,6 +325,11 @@ describe('leadARischio', () => {
     expect(leadARischio(leads, REF, 21)).toEqual([])
   })
 
+  it('excludes a lead manually marked stato_lead Chiuso, even with an open stato', () => {
+    const leads = [makeLead({ id: 'l-1', stato: 'In corso', stato_lead: 'Chiuso', data_ultimo_contatto: '2026-01-01' })]
+    expect(leadARischio(leads, REF, 21)).toEqual([])
+  })
+
   it('sorts by giorni descending', () => {
     const leads = [
       makeLead({ id: 'meno-fermo', data_ultimo_contatto: '2026-07-01' }), // 26

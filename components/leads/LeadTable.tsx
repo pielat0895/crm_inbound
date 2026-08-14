@@ -65,6 +65,7 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
               <th className="px-4 py-2 text-left"><SortableHeader label="Azienda" column="azienda" currentSort={sortBy} currentDir={sortDir} /></th>
               <th className="px-4 py-2 text-left font-medium">Origine</th>
               <th className="px-4 py-2 text-left font-medium">Stadio</th>
+              <th className="px-4 py-2 text-left font-medium">Appuntamento</th>
               <th className="px-4 py-2 text-left"><SortableHeader label="Ultimo contatto" column="data_ultimo_contatto" currentSort={sortBy} currentDir={sortDir} /></th>
               <th className="px-4 py-2 text-left font-medium">Follow-up</th>
               <th className="px-4 py-2 text-left"><SortableHeader label="Valore" column="valore" currentSort={sortBy} currentDir={sortDir} /></th>
@@ -101,10 +102,15 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
                   </div>
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">
+                  {lead.appuntamento
+                    ? new Date(lead.appuntamento).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })
+                    : '—'}
+                </td>
+                <td className="px-4 py-2 text-muted-foreground">
                   {lead.data_ultimo_contatto ? new Date(lead.data_ultimo_contatto).toLocaleDateString('it-IT') : '—'}
                 </td>
                 <td className="px-4 py-2">
-                  <OverdueBadge giorni={lead.giorni_ultimo_contatto} threshold={threshold} />
+                  <OverdueBadge giorni={lead.stato_lead === 'Chiuso' ? null : lead.giorni_ultimo_contatto} threshold={threshold} />
                 </td>
                 <td className="px-4 py-2">
                   {lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}
@@ -134,7 +140,7 @@ export function LeadTable({ leads, threshold, total, page, pageSize, hasFilters,
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <EmptyState
                     icon={hasFilters ? SearchX : Users}
                     title={hasFilters ? 'Nessun risultato' : 'Nessun lead ancora'}

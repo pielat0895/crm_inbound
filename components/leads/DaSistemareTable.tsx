@@ -69,7 +69,7 @@ export function DaSistemareTable({ leads, stages, threshold }: Props) {
               <td className="px-4 py-2 text-muted-foreground">
                 <div className="flex items-center gap-2">
                   {lead.data_ultimo_contatto ? new Date(lead.data_ultimo_contatto).toLocaleDateString('it-IT') : '—'}
-                  <OverdueBadge giorni={lead.giorni_ultimo_contatto} threshold={threshold} />
+                  <OverdueBadge giorni={lead.stato_lead === 'Chiuso' ? null : lead.giorni_ultimo_contatto} threshold={threshold} />
                 </div>
               </td>
               <td className="px-4 py-2">

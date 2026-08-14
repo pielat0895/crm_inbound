@@ -245,7 +245,9 @@ export function leadARischio(
 ): LeadARischio[] {
   const result: LeadARischio[] = []
   for (const lead of leads) {
-    if (!isActiveLead(lead)) continue
+    // stato_lead è indipendente da stato (esito): un lead può restare "attivo"
+    // per isActiveLead ma essere già marcato Chiuso a mano — niente follow-up.
+    if (!isActiveLead(lead) || lead.stato_lead === 'Chiuso') continue
     const { giorni, maiContattato } = giorniFermo(lead, now)
     if (giorni !== null && giorni >= thresholdDays) {
       result.push({ lead, giorni, maiContattato })
