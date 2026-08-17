@@ -109,8 +109,17 @@ describe('buildDaFareOra', () => {
     expect(items[0].kind).toBe('appuntamento')
   })
 
-  it('skips derived items for leads in an excluded stage', () => {
+  it('surfaces an explicit ricontattare even for a closed-stage lead', () => {
+    // Impostare una data di ricontatto è un'azione deliberata: deve emergere
+    // anche su un lead Vinto/Perso/Cliente, non sparire silenziosamente.
     const leads = [makeLead({ id: 'l-1', stato: 'Cliente', ricontattare: '2026-07-20' })]
+    const items = buildDaFareOra(leads, [], REF, new Set(), new Set())
+    expect(items).toHaveLength(1)
+    expect(items[0].kind).toBe('ricontatto')
+  })
+
+  it('skips appuntamento for leads in an excluded stage', () => {
+    const leads = [makeLead({ id: 'l-1', stato: 'Cliente', appuntamento: '2026-07-27T10:00:00Z' })]
     expect(buildDaFareOra(leads, [], REF, new Set(), new Set())).toEqual([])
   })
 

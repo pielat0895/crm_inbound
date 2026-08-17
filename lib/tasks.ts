@@ -103,8 +103,11 @@ export function buildDaFareOra(
   }
 
   for (const lead of leads) {
-    if (!isActiveLead(lead) || used.has(lead.id)) continue
+    if (used.has(lead.id)) continue
 
+    // ricontattare è un'azione esplicita dell'utente (anche su un lead Vinto/Perso,
+    // es. per ritentare in futuro) — deve emergere a prescindere da isActiveLead,
+    // altrimenti una data messa apposta sparisce silenziosamente nel nulla.
     if (lead.ricontattare && lead.ricontattare <= today) {
       items.push({
         key: `ricontatto:${lead.id}`,
@@ -122,6 +125,8 @@ export function buildDaFareOra(
       used.add(lead.id)
       continue
     }
+
+    if (!isActiveLead(lead)) continue
 
     if (lead.appuntamento && lead.appuntamento.slice(0, 10) === today) {
       items.push({
@@ -322,8 +327,10 @@ export function buildInArrivo(
   }
 
   for (const lead of leads) {
-    if (!isActiveLead(lead) || used.has(lead.id)) continue
+    if (used.has(lead.id)) continue
 
+    // Stesso principio di buildDaFareOra: una data di ricontatto esplicita
+    // vale anche su un lead non più "attivo" (Vinto/Perso).
     if (lead.ricontattare && lead.ricontattare > today && lead.ricontattare <= limit) {
       items.push({
         key: `ricontatto:${lead.id}`,
@@ -341,6 +348,8 @@ export function buildInArrivo(
       used.add(lead.id)
       continue
     }
+
+    if (!isActiveLead(lead)) continue
 
     const appDate = lead.appuntamento?.slice(0, 10)
     if (appDate && appDate > today && appDate <= limit) {
