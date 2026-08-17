@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuthToken } from '@/lib/auth'
 
-const PUBLIC_PATHS = ['/login', '/api/auth', '/api/webhook', '/api/cron']
+// /urbistat: brand assets (logo, hero image) for the login screen — must stay
+// reachable before auth, otherwise the login page itself renders with broken images.
+const PUBLIC_PATHS = ['/login', '/api/auth', '/api/webhook', '/api/cron', '/urbistat']
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
