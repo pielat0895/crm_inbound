@@ -63,7 +63,7 @@ export function SearchModalPreview() {
 
   function navigate(id: string) {
     setOpen(false)
-    router.push(`/leads-preview/${id}`)
+    router.push(`/leads/${id}`)
   }
 
   function onKeyDown(e: React.KeyboardEvent) {

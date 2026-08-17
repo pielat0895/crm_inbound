@@ -92,7 +92,7 @@ export function LeadFiltersPreview({ stages, owners, leads, countDaSistemare }: 
       </button>
       {countDaSistemare > 0 && (
         <Link
-          href="/leads-preview/da-sistemare"
+          href="/leads/da-sistemare"
           style={{
             height: 34, padding: '0 14px', border: 'none', background: GRAY_150, color: PLUM,
             font: "700 11px/1 'Open Sans'", letterSpacing: '.08em', textDecoration: 'none', whiteSpace: 'nowrap',

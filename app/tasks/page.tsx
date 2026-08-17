@@ -5,8 +5,10 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { computeLeadFields } from '@/types'
 import type { Lead, Task } from '@/types'
-import { buildTaskFeed, toDateString } from '@/lib/tasks'
-import { TaskFeedView } from '@/components/tasks/TaskFeedView'
+import { buildTaskFeed, toDateString, leadARischio } from '@/lib/tasks'
+import { PreviewShell } from '@/components/preview/PreviewShell'
+import { TaskFeedPreview } from '@/components/tasks-preview/TaskFeedPreview'
+import { ORANGE } from '@/components/dashboard-preview/tokens'
 
 function intParam(value: string | undefined, fallback: number): number {
   const n = parseInt(value ?? '', 10)
@@ -51,17 +53,39 @@ export default async function TasksPage({
 
   const feed = buildTaskFeed(leads, tasks, settings, filters, now)
   const owners = [...new Set(leads.map(l => l.owner).filter((o): o is string => !!o))].sort()
+  const rischio = leadARischio(leads, now, settings.followup_threshold_days)
+  const inChiusuraValore = feed.prossimiChiusura.reduce((sum, item) => sum + (item.valore ?? 0), 0)
+
+  const stageBars = settings.pipeline_stages.map(stage => ({
+    stage,
+    count: leads.filter(l => l.stadio_pipeline === stage).length,
+  }))
+
+  const todayLabel = now
+    .toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    .toUpperCase()
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-xl font-semibold">Da fare</h1>
-        <p className="text-sm text-muted-foreground">Scadenze, follow-up e deal da presidiare.</p>
-      </div>
-
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Caricamento…</p>}>
-        <TaskFeedView feed={feed} today={toDateString(now)} owners={owners} filters={filters} />
+    <PreviewShell
+      pageLabel={todayLabel}
+      titleAccent="LA TUA"
+      titleRest="GIORNATA"
+      headerStats={[
+        { value: String(feed.daFareOra.length), label: 'DA FARE ORA' },
+        { value: String(rischio.length), label: 'A RISCHIO', color: ORANGE },
+        { value: `€${inChiusuraValore.toLocaleString('it-IT')}`, label: `IN CHIUSURA ${filters.closingDays}GG`, color: ORANGE },
+      ]}
+      footerNote={`${leads.length} lead · ${rischio.length} follow-up scaduti`}
+    >
+      <Suspense fallback={<p style={{ fontSize: 13, color: '#868686' }}>Caricamento…</p>}>
+        <TaskFeedPreview
+          feed={feed}
+          today={toDateString(now)}
+          owners={owners}
+          filters={filters}
+          stageBars={stageBars}
+        />
       </Suspense>
-    </div>
+    </PreviewShell>
   )
 }

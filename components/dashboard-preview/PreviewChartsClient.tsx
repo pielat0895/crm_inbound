@@ -154,7 +154,7 @@ export function PreviewChartsClient({
                   <tr key={lead.id} className="border-b last:border-0">
                     <td className="py-2">
                       <Link
-                        href={`/leads-preview/${lead.id}`}
+                        href={`/leads/${lead.id}`}
                         className="hover:underline font-medium"
                         onClick={() => setModal(m => ({ ...m, open: false }))}
                       >

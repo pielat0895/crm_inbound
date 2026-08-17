@@ -67,7 +67,7 @@ function TaskRowPreview({
         </p>
         <p style={{ margin: '3px 0 0', font: "400 12px/1.35 'Open Sans'", color: GRAY_500 }}>
           {item.leadId && item.kind === 'task' && item.leadLabel && (
-            <Link href={`/leads-preview/${item.leadId}`} style={{ color: GRAY_500 }}>{item.leadLabel}</Link>
+            <Link href={`/leads/${item.leadId}`} style={{ color: GRAY_500 }}>{item.leadLabel}</Link>
           )}
           {item.kind === 'dormiente' && (
             item.maiContattato
@@ -109,7 +109,7 @@ function ClosingCardPreview({ item }: { item: ClosingItem }) {
   const color = STAGE_COLORS[item.stadio] ?? PLUM
   return (
     <Link
-      href={`/leads-preview/${item.leadId}`}
+      href={`/leads/${item.leadId}`}
       style={{ display: 'block', width: '100%', textAlign: 'left', background: '#fff', borderBottom: `1px solid ${GRAY_BORDER}`, padding: '14px 16px', textDecoration: 'none', color: 'inherit' }}
     >
       <p style={{ margin: 0, font: "700 22px/1 'Open Sans'", color }}>

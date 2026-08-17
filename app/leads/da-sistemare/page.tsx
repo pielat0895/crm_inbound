@@ -3,9 +3,11 @@ export const dynamic = 'force-dynamic'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { computeLeadFields } from '@/types'
-import { DaSistemareTable } from '@/components/leads/DaSistemareTable'
+import { leadARischio } from '@/lib/tasks'
+import { DaSistemareTablePreview } from '@/components/leads-preview/DaSistemareTablePreview'
+import { PreviewShell } from '@/components/preview/PreviewShell'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ORANGE, GRAY_500 } from '@/components/dashboard-preview/tokens'
 
 export default async function DaSistemarePage() {
   const settings = await getSettings()
@@ -17,24 +19,33 @@ export default async function DaSistemarePage() {
     .eq('stadio_pipeline', 'Da sistemare')
     .order('created_at', { ascending: false })
 
-  const computed = (leads ?? []).map(l => computeLeadFields(l))
+  const now = new Date()
+  const computed = (leads ?? []).map(l => computeLeadFields(l, now))
+
+  const { data: allLeadRows } = await supabase.from('leads').select('*')
+  const allComputed = (allLeadRows ?? []).map(l => computeLeadFields(l, now))
+  const rischio = leadARischio(allComputed, now, settings.followup_threshold_days)
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link href="/leads" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline">
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Torna ai lead
+    <PreviewShell
+      pageLabel="MIGRAZIONE DATI"
+      titleAccent="DA"
+      titleRest="SISTEMARE"
+      headerStats={[{ value: String(count ?? 0), label: 'DA ASSEGNARE', color: ORANGE }]}
+      footerNote={`${allComputed.length} lead · ${rischio.length} follow-up scaduti`}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <Link
+          href="/leads"
+          style={{ alignSelf: 'flex-start', font: "600 11px/1 'Open Sans'", letterSpacing: '.1em', color: GRAY_500, textDecoration: 'none' }}
+        >
+          ← TORNA AI LEAD
         </Link>
-        <div className="flex items-center justify-between mt-1">
-          <h1 className="text-2xl font-bold">Da sistemare</h1>
-          <span className="text-sm text-muted-foreground">{count ?? 0} da assegnare a uno stadio</span>
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p style={{ margin: 0, font: "400 13px/1.6 'Open Sans'", color: GRAY_500, maxWidth: 640 }}>
           Lead con stadio pipeline non recuperato dalla migrazione dati. Assegna lo stadio corretto: la riga sparisce appena salvata.
         </p>
+        <DaSistemareTablePreview leads={computed} stages={settings.pipeline_stages} threshold={settings.followup_threshold_days} />
       </div>
-      <DaSistemareTable leads={computed} stages={settings.pipeline_stages} threshold={settings.followup_threshold_days} />
-    </div>
+    </PreviewShell>
   )
 }

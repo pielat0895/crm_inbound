@@ -82,7 +82,7 @@ export function LeadTablePreview({ leads, threshold, total, page, pageSize, hasF
               return (
                 <tr
                   key={lead.id}
-                  onClick={() => router.push(`/leads-preview/${lead.id}`)}
+                  onClick={() => router.push(`/leads/${lead.id}`)}
                   className="hover:bg-[#faf9f7]"
                   style={{ borderBottom: `1px solid ${GRAY_BORDER}`, cursor: 'pointer' }}
                 >

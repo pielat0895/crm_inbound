@@ -2,19 +2,19 @@ export const dynamic = 'force-dynamic'
 
 import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
-import { StatsCard } from '@/components/ui/StatsCard'
 import { computeLeadFields, STATO_TERMINALI, STATO_APPUNTAMENTO_OPTIONS } from '@/types'
 import Link from 'next/link'
-import { Users, TrendingUp, Clock, AlertCircle, Euro, Trophy, Target, CalendarX, Award, Gauge, CalendarCheck } from 'lucide-react'
-import { TrendChart } from '@/components/dashboard/TrendChart'
-import { PipelineChart } from '@/components/dashboard/PipelineChart'
-import { ConversionChart } from '@/components/dashboard/ConversionChart'
-import { ChartsSection } from '@/components/dashboard/ChartsSection'
-import type { SlimLead } from '@/components/dashboard/ChartsSection'
-import { DashboardFilters } from '@/components/dashboard/DashboardFilters'
+import { Suspense } from 'react'
 import { percent, winRateVintoPerso, weightedForecast, performanceByKey, distribuzioneEsiti, schedulingToCloseRate } from '@/lib/dashboard-metrics'
 import { leadARischio } from '@/lib/tasks'
-import { Suspense } from 'react'
+import { PreviewShell } from '@/components/preview/PreviewShell'
+import { StatGrid } from '@/components/dashboard-preview/StatGrid'
+import { StatTile } from '@/components/dashboard-preview/StatTile'
+import { SectionCard, Accent } from '@/components/dashboard-preview/SectionCard'
+import { PreviewChartsClient } from '@/components/dashboard-preview/PreviewChartsClient'
+import { DashboardFiltersPreview } from '@/components/dashboard-preview/DashboardFiltersPreview'
+import { PLUM, GRAY_BORDER, ORANGE, GRAY_500 } from '@/components/dashboard-preview/tokens'
+import { stageBadgeColors } from '@/components/preview/badge-colors'
 
 function getDateRange(range: string | null, from: string | null, to: string | null): { start: Date | null; end: Date | null } {
   if (from || to) {
@@ -23,6 +23,7 @@ function getDateRange(range: string | null, from: string | null, to: string | nu
       end: to ? new Date(to + 'T23:59:59') : null,
     }
   }
+  if (range === 'all') return { start: null, end: null }
   const days = parseInt(range ?? '30', 10)
   if (isNaN(days)) return { start: null, end: null }
   const end = new Date()
@@ -48,7 +49,8 @@ export default async function DashboardPage({
     getSettings(),
   ])
 
-  const allLeadsRaw = (leads ?? []).map(l => computeLeadFields(l))
+  const now = new Date()
+  const allLeadsRaw = (leads ?? []).map(l => computeLeadFields(l, now))
 
   const baseLeads = allLeadsRaw.filter(l =>
     (!filterOwner || l.owner === filterOwner) &&
@@ -65,20 +67,14 @@ export default async function DashboardPage({
     return true
   }
 
-  // Coorte apertura: lead aperti nel periodo, esito attuale qualunque sia oggi.
   const allLeads = baseLeads.filter(l => filterByDate(l, l.data_apertura))
   const openLeads = baseLeads.filter(l => !STATO_TERMINALI.includes(l.stato ?? ''))
-
-  // Coorte chiusura: lead chiusi (data_chiusura) nel periodo.
   const closedInRange = baseLeads.filter(l => filterByDate(l, l.data_chiusura))
   const closedDecisive = closedInRange.filter(l => l.stato === 'Vinto' || l.stato === 'Perso')
   const wonLeads = closedInRange.filter(l => l.stato === 'Vinto')
 
-  // Conversione lead (coorte apertura): quota di lead aperti nel periodo che sono OGGI Vinto.
   const leadWonToday = allLeads.filter(l => l.stato === 'Vinto').length
   const conversioneLeadRate = percent(leadWonToday, allLeads.length)
-
-  // Win rate (coorte chiusura): tra i lead chiusi con esito Vinto/Perso, quota Vinto.
   const { vinti: winVinti, rate: winRate } = winRateVintoPerso(closedDecisive)
 
   const wonWithDays = wonLeads.filter(l => l.giorni_pipeline !== null)
@@ -90,10 +86,6 @@ export default async function DashboardPage({
   const pipelineValue = openLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
   const forecastPesato = weightedForecast(openLeads, settings.pipeline_stage_probabilities)
 
-  // Tasso no-show (coorte apertura, come Conversione lead — rispetta il
-  // range di giorni selezionato): esclude Schedulato (esito non ancora noto)
-  // e Non schedulato (non applicabile) dal denominatore — risponde a "di chi
-  // arriva a un appuntamento, quanti non si presentano".
   const nonPresentati = allLeads.filter(l => l.stato_appuntamento === 'Non presentato').length
   const effettuati = allLeads.filter(l => l.stato_appuntamento === 'Effettuato').length
   const noShowRate = percent(nonPresentati, nonPresentati + effettuati)
@@ -103,23 +95,17 @@ export default async function DashboardPage({
     count: allLeads.filter(l => l.stato_appuntamento === stato).length,
   }))
 
-  // Tasso scheduling→chiusura: tra i lead chiusi (Vinto/Perso) che hanno fatto l'appuntamento.
   const { vinti: schedVinti, totale: schedTotale, rate: schedulingToCloseRateValue } = schedulingToCloseRate(closedDecisive)
-
   const esitiChartData = distribuzioneEsiti(closedInRange, STATO_TERMINALI)
-
-  const rischio = leadARischio(openLeads, new Date(), settings.followup_threshold_days)
-
-  const today = new Date().toISOString().split('T')[0]
+  const rischio = leadARischio(openLeads, now, settings.followup_threshold_days)
+  const today = now.toISOString().split('T')[0]
   const todayFollowups = openLeads.filter(l => l.ricontattare === today)
 
   const leadsByStage = settings.pipeline_stages.map(stage => {
     const stageLeads = allLeads.filter(l => l.stadio_pipeline === stage)
-    const revenue = stageLeads.reduce((sum, l) => sum + (l.valore ?? 0), 0)
-    return { stage, count: stageLeads.length, revenue }
+    return { stage, count: stageLeads.length }
   })
 
-  // Trend uses filtered leads
   const trendMensile: Record<string, number> = {}
   for (const lead of allLeads) {
     if (lead.data_apertura) {
@@ -127,46 +113,26 @@ export default async function DashboardPage({
       trendMensile[month] = (trendMensile[month] ?? 0) + 1
     }
   }
-  const trendMensileRows = Object.entries(trendMensile).sort(([a], [b]) => a.localeCompare(b))
-  const counts = trendMensileRows.map(([, count]) => count)
-  const trendChartData = trendMensileRows.map(([month, count], i) => {
-    const w = counts.slice(Math.max(0, i - 2), i + 1)
-    const media = Math.round(w.reduce((a, b) => a + b, 0) / w.length)
-    const [year, m] = month.split('-')
-    const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
-    return { label, count, media, month }
-  })
+  const trendChartData = Object.entries(trendMensile)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, count]) => {
+      const [year, m] = month.split('-')
+      const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
+      return { label, value: count, month }
+    })
 
-  // Conversione per origine (coorte apertura, stesso principio di conversioneLeadRate).
-  // I lead senza origine restano esclusi dal grafico, come nel comportamento precedente.
-  const conversionePerOrigine = performanceByKey(allLeads.filter(l => l.origine), l => l.origine)
-    .sort((a, b) => b.tasso - a.tasso)
+  const conversionePerOrigine = performanceByKey(allLeads.filter(l => l.origine), l => l.origine).sort((a, b) => b.tasso - a.tasso)
+  const conversionChartData = conversionePerOrigine.map(({ key, tasso }) => ({ origine: key, tassoVinti: tasso, tassoNonVinti: 100 - tasso }))
 
-  const conversionChartData = conversionePerOrigine.map(({ key, tasso }) => ({
-    origine: key,
-    tassoVinti: tasso,
-    tassoNonVinti: 100 - tasso,
-    tasso,
-  }))
-
-  // Performance owner (coorte apertura). A differenza di conversionePerOrigine, i lead
-  // senza owner finiscono nel bucket "N/D" — stessa convenzione del grafico "Lead per owner".
   const performancePerOwner = performanceByKey(allLeads, l => l.owner).sort((a, b) => b.tasso - a.tasso)
-  const ownerConversionChartData = performancePerOwner.map(({ key, tasso }) => ({
-    owner: key,
-    tassoVinti: tasso,
-    tassoNonVinti: 100 - tasso,
-    tasso,
-  }))
+  const ownerConversionChartData = performancePerOwner.map(({ key, tasso }) => ({ owner: key, tassoVinti: tasso, tassoNonVinti: 100 - tasso }))
 
-  // Sito chart data
   const sitoChartData = [
     { name: 'Sì', value: allLeads.filter(l => l.hanno_sito === true).length },
     { name: 'No', value: allLeads.filter(l => l.hanno_sito === false).length },
     { name: 'N/D', value: allLeads.filter(l => l.hanno_sito === null).length },
   ].filter(d => d.value > 0)
 
-  // Dipendenti chart data — count by predefined range string
   const dipendentiOrder = ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001-10000','10000+','Studente','Autonomo']
   const dipendentiMap: Record<string, number> = {}
   for (const lead of baseLeads) {
@@ -178,213 +144,202 @@ export default async function DashboardPage({
     ...(dipendentiMap['N/D'] ? [{ range: 'N/D', count: dipendentiMap['N/D'] }] : []),
   ]
 
-  // Industry chart data
   const industryMap: Record<string, number> = {}
   for (const lead of baseLeads) {
     const key = lead.industry ?? 'N/D'
     industryMap[key] = (industryMap[key] ?? 0) + 1
   }
-  const industryChartData = Object.entries(industryMap)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
+  const industryChartData = Object.entries(industryMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
-  // Filter options — always from full dataset so options don't disappear when filtering
-  const availableOwners = [...new Set(allLeadsRaw.map(l => l.owner).filter(Boolean))].sort() as string[]
-  const availableStages = [...new Set(allLeadsRaw.map(l => l.stadio_pipeline).filter(Boolean))].sort() as string[]
-  const availableOrigini = [...new Set(allLeadsRaw.map(l => l.origine).filter(Boolean))].sort() as string[]
-
-  // Owner chart data
   const ownerMap: Record<string, number> = {}
   for (const lead of baseLeads) {
     const key = lead.owner ?? 'N/D'
     ownerMap[key] = (ownerMap[key] ?? 0) + 1
   }
-  const ownerChartData = Object.entries(ownerMap)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
+  const ownerChartData = Object.entries(ownerMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
-  // baseLeads (non allLeadsRaw): i drill-down dei grafici devono rispettare
-  // gli stessi filtri owner/stadio/origine applicati ai grafici stessi.
-  // Il range di date viene applicato lato client in ChartsSection, perché
-  // cambia a seconda della coorte del grafico cliccato (apertura vs chiusura).
-  const slimLeads: SlimLead[] = baseLeads.map(l => ({
-    id: l.id,
-    nome: l.nome,
-    cognome: l.cognome,
-    azienda: l.azienda,
-    stadio_pipeline: l.stadio_pipeline,
-    stato: l.stato,
-    stato_appuntamento: l.stato_appuntamento,
-    valore: l.valore,
-    industry: l.industry,
-    dipendenti: l.dipendenti,
-    origine: l.origine,
-    data_apertura: l.data_apertura,
-    data_chiusura: l.data_chiusura,
-    owner: l.owner,
+  const availableOwners = [...new Set(allLeadsRaw.map(l => l.owner).filter(Boolean))].sort() as string[]
+  const availableStages = [...new Set(allLeadsRaw.map(l => l.stadio_pipeline).filter(Boolean))].sort() as string[]
+  const availableOrigini = [...new Set(allLeadsRaw.map(l => l.origine).filter(Boolean))].sort() as string[]
+
+  const slimLeads = baseLeads.map(l => ({
+    id: l.id, nome: l.nome, cognome: l.cognome, azienda: l.azienda,
+    stadio_pipeline: l.stadio_pipeline, stato: l.stato, stato_appuntamento: l.stato_appuntamento,
+    valore: l.valore, industry: l.industry, dipendenti: l.dipendenti, origine: l.origine,
+    owner: l.owner, data_apertura: l.data_apertura,
   }))
 
-  const wonDealsSorted = wonLeads
-    .filter(l => l.data_chiusura)
-    .sort((a, b) => (b.data_chiusura ?? '').localeCompare(a.data_chiusura ?? ''))
+  const wonDealsSorted = wonLeads.filter(l => l.data_chiusura).sort((a, b) => (b.data_chiusura ?? '').localeCompare(a.data_chiusura ?? ''))
+  const openDealsSorted = openLeads.filter(l => l.valore).sort((a, b) => (b.valore ?? 0) - (a.valore ?? 0))
 
-  const openDealsSorted = openLeads
-    .filter(l => l.valore)
-    .sort((a, b) => (b.valore ?? 0) - (a.valore ?? 0))
+  const headerStats = [
+    { value: String(allLeadsRaw.length), label: 'LEAD TOTALI' },
+    { value: `${winRate}%`, label: 'WIN RATE', color: ORANGE },
+    { value: `€${pipelineValue.toLocaleString('it-IT')}`, label: 'PIPELINE APERTA', color: ORANGE },
+  ]
+  const footerNote = `${allLeadsRaw.length} lead · ${rischio.length} follow-up scaduti`
+
+  const th: React.CSSProperties = { padding: '0 0 9px', textAlign: 'left', font: "700 10px/1 'Open Sans'", letterSpacing: '.1em', color: GRAY_500 }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+    <PreviewShell
+      pageLabel="STATO DEL PORTAFOGLIO"
+      titleAccent="STATO"
+      titleRest="DEL PORTAFOGLIO"
+      headerStats={headerStats}
+      footerNote={footerNote}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <Suspense>
-          <DashboardFilters
-            owners={availableOwners}
-            stages={availableStages}
-            origini={availableOrigini}
-          />
+          <DashboardFiltersPreview owners={availableOwners} stages={availableStages} origini={availableOrigini} />
         </Suspense>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-5">
-        <StatsCard title="Lead totali" value={allLeads.length} subtitle={`${openLeads.length} aperti`} icon={Users} color="blue" />
-        <StatsCard title="Conversione lead" value={`${conversioneLeadRate}%`} subtitle={`${leadWonToday} vinti su ${allLeads.length} aperti`} icon={TrendingUp} color="green" />
-        <StatsCard title="Win rate" value={`${winRate}%`} subtitle={`${winVinti} vinti su ${closedDecisive.length} chiusi`} icon={Award} color="green" />
-        <StatsCard title="Fatturato vinti" value={`€${totalRevenue.toLocaleString('it-IT')}`} subtitle={`${wonLeads.length} deal chiusi`} icon={Euro} color="green" />
-        <StatsCard title="Pipeline aperta" value={`€${pipelineValue.toLocaleString('it-IT')}`} subtitle={`${openLeads.filter(l => l.valore).length} deal con valore`} icon={Target} color="blue" />
-        <StatsCard title="Forecast pesato" value={`€${Math.round(forecastPesato).toLocaleString('it-IT')}`} subtitle="pipeline × probabilità stadio" icon={Gauge} color="amber" />
-        <StatsCard title="Giorni medi chiusura" value={avgDaysToClose} icon={Clock} color="amber" />
-        <StatsCard title="Lead a rischio" value={rischio.length} subtitle={`fermi da ${settings.followup_threshold_days}+ gg`} icon={AlertCircle} color="red" />
-        <StatsCard title="Tasso no-show" value={`${noShowRate}%`} subtitle={`${nonPresentati} su ${nonPresentati + effettuati} appuntamenti`} icon={CalendarX} color="red" />
-        <StatsCard title="Scheduling→chiusura" value={`${schedulingToCloseRateValue}%`} subtitle={`${schedVinti} vinti su ${schedTotale} effettuati`} icon={CalendarCheck} color="green" />
-      </div>
+        <StatGrid columns={5}>
+          <StatTile label="Lead totali" value={allLeads.length} sub={`${openLeads.length} aperti`} />
+          <StatTile label="Conversione lead" value={`${conversioneLeadRate}%`} sub={`${leadWonToday} vinti su ${allLeads.length}`} accent={ORANGE} />
+          <StatTile label="Win rate" value={`${winRate}%`} sub={`${winVinti} vinti su ${closedDecisive.length} chiusi`} accent={ORANGE} />
+          <StatTile label="Fatturato vinti" value={`€${totalRevenue.toLocaleString('it-IT')}`} sub={`${wonLeads.length} deal chiusi`} />
+          <StatTile label="Pipeline aperta" value={`€${pipelineValue.toLocaleString('it-IT')}`} sub={`${openLeads.filter(l => l.valore).length} deal`} dark />
+          <StatTile label="Forecast pesato" value={`€${Math.round(forecastPesato).toLocaleString('it-IT')}`} sub="pipeline × probabilità" accent={ORANGE} />
+          <StatTile label="Giorni medi chiusura" value={avgDaysToClose} />
+          <StatTile label="Lead a rischio" value={rischio.length} sub={`fermi da ${settings.followup_threshold_days}+ gg`} accent={ORANGE} />
+          <StatTile label="Tasso no-show" value={`${noShowRate}%`} sub={`${nonPresentati} su ${nonPresentati + effettuati}`} accent={ORANGE} />
+          <StatTile label="Scheduling→chiusura" value={`${schedulingToCloseRateValue}%`} sub={`${schedVinti} su ${schedTotale} effettuati`} accent={ORANGE} />
+        </StatGrid>
 
-      <ChartsSection
-        sitoChartData={sitoChartData}
-        dipendentiChartData={dipendentiChartData}
-        industryChartData={industryChartData}
-        trendChartData={trendChartData}
-        pipelineData={leadsByStage}
-        conversionChartData={conversionChartData}
-        ownerChartData={ownerChartData}
-        ownerConversionChartData={ownerConversionChartData}
-        appuntamentoChartData={appuntamentoChartData}
-        esitiChartData={esitiChartData}
-        dateRangeStart={start}
-        dateRangeEnd={end}
-        leads={slimLeads}
-      />
+        <PreviewChartsClient
+          trendChartData={trendChartData}
+          pipelineData={leadsByStage}
+          conversionChartData={conversionChartData}
+          ownerConversionChartData={ownerConversionChartData}
+          ownerChartData={ownerChartData}
+          appuntamentoChartData={appuntamentoChartData}
+          esitiChartData={esitiChartData}
+          sitoChartData={sitoChartData}
+          dipendentiChartData={dipendentiChartData}
+          industryChartData={industryChartData}
+          leads={slimLeads}
+        />
 
-      {wonDealsSorted.length > 0 && (
-        <div className="rounded-lg border p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="h-4 w-4 text-green-600" />
-            <h2 className="font-semibold">Deal chiusi vinti ({wonDealsSorted.length})</h2>
-          </div>
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2 font-medium text-muted-foreground">Cliente</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Azienda</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Origine</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Valore</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Chiuso il</th>
-                </tr>
-              </thead>
-              <tbody>
-                {wonDealsSorted.map(lead => (
-                  <tr key={lead.id} className="border-b last:border-0">
-                    <td className="py-2">
-                      <Link href={`/leads/${lead.id}`} className="hover:underline font-medium">
-                        {lead.nome} {lead.cognome}
-                      </Link>
-                    </td>
-                    <td className="py-2 text-muted-foreground">{lead.azienda ?? '—'}</td>
-                    <td className="py-2 text-muted-foreground">{lead.origine ?? '—'}</td>
-                    <td className="py-2 text-right font-medium text-green-700">
-                      {lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}
-                    </td>
-                    <td className="py-2 text-right text-muted-foreground">
-                      {lead.data_chiusura ? new Date(lead.data_chiusura).toLocaleDateString('it-IT') : '—'}
-                    </td>
+        {openDealsSorted.length > 0 && (
+          <div style={{ background: '#fff', border: `1px solid ${GRAY_BORDER}`, padding: '22px 24px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 18 }}>
+              <h2 style={{ fontFamily: "'Brygada 1918', Georgia, serif", fontWeight: 700, fontSize: 15, letterSpacing: '.07em', textTransform: 'uppercase', margin: 0 }}>
+                Deal aperti con <span style={{ color: ORANGE }}>valore</span>
+              </h2>
+              <span style={{ marginLeft: 'auto', font: "700 18px/1 'Open Sans'", color: ORANGE }}>€{pipelineValue.toLocaleString('it-IT')}</span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: `2px solid ${PLUM}` }}>
+                    <th style={th}>CLIENTE</th>
+                    <th style={th}>AZIENDA</th>
+                    <th style={th}>STADIO</th>
+                    <th style={th}>ORIGINE</th>
+                    <th style={{ ...th, textAlign: 'right' }}>VALORE</th>
+                    <th style={{ ...th, textAlign: 'right' }}>APERTO DA</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {openDealsSorted.map(lead => {
+                    const badge = stageBadgeColors(lead.stadio_pipeline)
+                    return (
+                      <tr key={lead.id} style={{ borderBottom: `1px solid ${GRAY_BORDER}` }}>
+                        <td style={{ padding: '11px 0' }}>
+                          <Link href={`/leads/${lead.id}`} style={{ color: PLUM, textDecoration: 'none', fontWeight: 600 }}>{lead.nome} {lead.cognome}</Link>
+                        </td>
+                        <td style={{ padding: '11px 0', color: GRAY_500 }}>{lead.azienda ?? '—'}</td>
+                        <td style={{ padding: '11px 0' }}>
+                          <span style={{ display: 'inline-block', padding: '3px 8px', font: "700 9px/1.3 'Open Sans'", letterSpacing: '.1em', background: badge.bg, color: badge.fg }}>
+                            {lead.stadio_pipeline.toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ padding: '11px 0', color: GRAY_500 }}>{lead.origine ?? '—'}</td>
+                        <td style={{ padding: '11px 0', textAlign: 'right', fontWeight: 700 }}>
+                          {lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}
+                        </td>
+                        <td style={{ padding: '11px 0', textAlign: 'right', color: GRAY_500 }}>
+                          {lead.giorni_aperto != null ? `${lead.giorni_aperto} gg` : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {openDealsSorted.length > 0 && (
-        <div className="rounded-lg border p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Target className="h-4 w-4 text-blue-600" />
-            <h2 className="font-semibold">Deal aperti con valore ({openDealsSorted.length})</h2>
-            <span className="ml-auto text-sm font-medium text-blue-700">€{pipelineValue.toLocaleString('it-IT')}</span>
-          </div>
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2 font-medium text-muted-foreground">Cliente</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Azienda</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Stadio</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Origine</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Valore</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Aperto da</th>
-                </tr>
-              </thead>
-              <tbody>
-                {openDealsSorted.map(lead => (
-                  <tr key={lead.id} className="border-b last:border-0">
-                    <td className="py-2">
-                      <Link href={`/leads/${lead.id}`} className="hover:underline font-medium">
-                        {lead.nome} {lead.cognome}
-                      </Link>
-                    </td>
-                    <td className="py-2 text-muted-foreground">{lead.azienda ?? '—'}</td>
-                    <td className="py-2 text-muted-foreground">{lead.stadio_pipeline}</td>
-                    <td className="py-2 text-muted-foreground">{lead.origine ?? '—'}</td>
-                    <td className="py-2 text-right font-medium text-blue-700">
-                      {lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}
-                    </td>
-                    <td className="py-2 text-right text-muted-foreground">
-                      {lead.giorni_aperto != null ? `${lead.giorni_aperto}gg` : '—'}
-                    </td>
+        {wonDealsSorted.length > 0 && (
+          <SectionCard title={<>Deal chiusi <Accent>vinti</Accent></>}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${GRAY_BORDER}`, textAlign: 'left' }}>
+                    <th style={{ padding: '0 0 8px', fontWeight: 700, fontSize: 10.5, letterSpacing: '.1em', textTransform: 'uppercase', color: GRAY_500 }}>Cliente</th>
+                    <th style={{ padding: '0 0 8px', fontWeight: 700, fontSize: 10.5, letterSpacing: '.1em', textTransform: 'uppercase', color: GRAY_500 }}>Azienda</th>
+                    <th style={{ padding: '0 0 8px', fontWeight: 700, fontSize: 10.5, letterSpacing: '.1em', textTransform: 'uppercase', color: GRAY_500, textAlign: 'right' }}>Valore</th>
                   </tr>
+                </thead>
+                <tbody>
+                  {wonDealsSorted.map(lead => (
+                    <tr key={lead.id} style={{ borderBottom: '1px solid #EEEEEE' }}>
+                      <td style={{ padding: '8px 0' }}>
+                        <Link href={`/leads/${lead.id}`} style={{ color: ORANGE, textDecoration: 'none', fontWeight: 600 }}>{lead.nome} {lead.cognome}</Link>
+                      </td>
+                      <td style={{ padding: '8px 0', color: '#5E525A' }}>{lead.azienda ?? '—'}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700 }}>{lead.valore != null ? `€${lead.valore.toLocaleString('it-IT')}` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 24 }}>
+          <div style={{ background: PLUM, padding: '22px 24px' }}>
+            <p style={{ margin: '0 0 16px', font: "700 11px/1 'Open Sans'", letterSpacing: '.12em', color: ORANGE }}>LEAD A RISCHIO</p>
+            {rischio.length === 0 ? (
+              <p style={{ margin: 0, font: "400 13px/1.4 'Open Sans'", color: 'rgba(255,255,255,.6)' }}>Nessun lead fermo oltre la soglia.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {rischio.slice(0, 10).map(({ lead, giorni, maiContattato }) => (
+                  <Link
+                    key={lead.id}
+                    href={`/leads/${lead.id}`}
+                    style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '11px 0', borderBottom: '1px solid rgba(255,255,255,.14)', textDecoration: 'none' }}
+                  >
+                    <span style={{ font: "400 13px/1.3 'Open Sans'", color: '#fff' }}>{lead.nome} {lead.cognome} · {lead.azienda}</span>
+                    <span style={{ font: "700 12px/1.3 'Open Sans'", letterSpacing: '.06em', color: ORANGE, flex: 'none' }}>
+                      {maiContattato ? `MAI CONTATTATO` : `${giorni} GG`}
+                    </span>
+                  </Link>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
+          </div>
+          <div style={{ background: '#fff', border: `1px solid ${GRAY_BORDER}`, padding: '22px 24px' }}>
+            <p style={{ margin: '0 0 16px', font: "700 11px/1 'Open Sans'", letterSpacing: '.12em' }}>FOLLOW-UP DI OGGI</p>
+            {todayFollowups.length === 0 ? (
+              <p style={{ margin: 0, font: "400 13px/1.4 'Open Sans'", color: GRAY_500 }}>Nessun follow-up in programma per oggi.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {todayFollowups.map(lead => (
+                  <Link
+                    key={lead.id}
+                    href={`/leads/${lead.id}`}
+                    style={{ display: 'block', padding: '11px 0', borderBottom: `1px solid ${GRAY_BORDER}`, font: "400 13px/1.3 'Open Sans'", color: PLUM, textDecoration: 'none' }}
+                  >
+                    {lead.nome} {lead.cognome} · {lead.azienda}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
-
-      {rischio.length > 0 && (
-        <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-          <h2 className="font-semibold text-orange-800 mb-3">Lead a rischio ({rischio.length})</h2>
-          <div className="space-y-1">
-            {rischio.slice(0, 10).map(({ lead, giorni, maiContattato }) => (
-              <Link key={lead.id} href={`/leads/${lead.id}`} className="flex justify-between text-sm hover:underline">
-                <span>{lead.nome} {lead.cognome} — {lead.azienda}</span>
-                <span className="text-orange-600">{maiContattato ? `mai contattato, ${giorni}gg` : `${giorni}gg fa`}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {todayFollowups.length > 0 && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <h2 className="font-semibold text-blue-800 mb-3">Follow-up oggi ({todayFollowups.length})</h2>
-          <div className="space-y-1">
-            {todayFollowups.map(lead => (
-              <Link key={lead.id} href={`/leads/${lead.id}`} className="block text-sm hover:underline">
-                {lead.nome} {lead.cognome} — {lead.azienda}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </PreviewShell>
   )
 }

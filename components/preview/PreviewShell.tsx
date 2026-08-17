@@ -9,17 +9,17 @@ import {
 } from '@/components/dashboard-preview/tokens'
 import { SearchModalPreview } from './SearchModalPreview'
 
-// Font caricati SOLO per le rotte preview: nessuna modifica ad app/layout.tsx,
-// così il resto del CRM resta su Inter come oggi.
+// Font caricati qui invece che in app/layout.tsx: la shell UrbiStat è la sola
+// consumer del lockup Brygada 1918 + Open Sans.
 const heading = Brygada_1918({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-heading' })
 const body = Open_Sans({ subsets: ['latin'], weight: ['300', '400', '600', '700', '800'], variable: '--font-body' })
 
 const NAV_ITEMS = [
-  { href: '/tasks-preview', label: 'Da fare' },
-  { href: '/dashboard-preview', label: 'Dashboard' },
-  { href: '/pipeline-preview', label: 'Pipeline' },
-  { href: '/leads-preview', label: 'Lead' },
-  { href: '/settings-preview', label: 'Impostazioni' },
+  { href: '/tasks', label: 'Da fare' },
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/pipeline', label: 'Pipeline' },
+  { href: '/leads', label: 'Lead' },
+  { href: '/settings', label: 'Impostazioni' },
 ]
 
 export type HeaderStat = { value: string; label: string; color?: string }

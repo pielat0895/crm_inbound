@@ -38,7 +38,7 @@ export function KanbanCardPreview({ lead, threshold }: Props) {
       }}
       {...attributes}
       {...listeners}
-      onClick={() => router.push(`/leads-preview/${lead.id}`)}
+      onClick={() => router.push(`/leads/${lead.id}`)}
       className="hover:bg-[#fbfaf9]"
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>

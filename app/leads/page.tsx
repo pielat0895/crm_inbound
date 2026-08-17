@@ -4,13 +4,12 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getSettings } from '@/lib/settings'
 import { computeLeadFields } from '@/types'
 import { sanitizeSearchTerm } from '@/lib/search'
-import { LeadTable } from '@/components/leads/LeadTable'
-import { LeadFilters } from '@/components/leads/LeadFilters'
-import { LeadQuickStats } from '@/components/leads/LeadQuickStats'
 import { STATO_TERMINALI } from '@/types'
-import { Suspense } from 'react'
-import Link from 'next/link'
-import { Wrench } from 'lucide-react'
+import { leadARischio } from '@/lib/tasks'
+import { LeadTablePreview } from '@/components/leads-preview/LeadTablePreview'
+import { LeadFiltersPreview } from '@/components/leads-preview/LeadFiltersPreview'
+import { PreviewShell } from '@/components/preview/PreviewShell'
+import { ORANGE } from '@/components/dashboard-preview/tokens'
 
 const PAGE_SIZE = 50
 
@@ -54,8 +53,6 @@ export default async function LeadsPage({
     cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
     query = query.not('data_ultimo_contatto', 'is', null)
       .lte('data_ultimo_contatto', cutoff.toISOString().split('T')[0])
-      // stato_lead Chiuso = niente follow-up, anche se il contatto è vecchio.
-      // .neq è NULL-unsafe in Postgres, quindi va esplicitato l'OR sul null.
       .or('stato_lead.is.null,stato_lead.neq.Chiuso')
   }
   if (sp.owner && sp.owner !== 'all') {
@@ -70,7 +67,8 @@ export default async function LeadsPage({
     .order(sortBy, { ascending: sortDir, nullsFirst: false })
     .range(offset, offset + PAGE_SIZE - 1)
 
-  const computed = (leads ?? []).map(l => computeLeadFields(l))
+  const now = new Date()
+  const computed = (leads ?? []).map(l => computeLeadFields(l, now))
   const hasFilters = !!(sp.q || (sp.stadio && sp.stadio !== 'all') || (sp.origine && sp.origine !== 'all') || sp.contattato || (sp.stato_appuntamento && sp.stato_appuntamento !== 'all') || sp.scaduto === '1' || (sp.owner && sp.owner !== 'all') || sp.apertura_da || sp.apertura_a || sp.chiusura_da || sp.chiusura_a)
 
   const { data: ownerRows } = await supabase.from('leads').select('owner').not('owner', 'is', null)
@@ -79,42 +77,44 @@ export default async function LeadsPage({
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - settings.followup_threshold_days)
 
-  const [{ count: countAttivi }, { count: countScaduti }, { count: countDaSistemare }] = await Promise.all([
+  const [{ data: allLeadRows }, { count: countAttivi }, { count: countScaduti }, { count: countDaSistemare }] = await Promise.all([
+    supabase.from('leads').select('*'),
     supabase.from('leads').select('*', { count: 'exact', head: true }).or(`stato.is.null,stato.not.in.(${STATO_TERMINALI.map(s => `"${s}"`).join(',')})`),
     supabase.from('leads').select('*', { count: 'exact', head: true }).not('data_ultimo_contatto', 'is', null).lte('data_ultimo_contatto', cutoff.toISOString().split('T')[0]),
     supabase.from('leads').select('*', { count: 'exact', head: true }).eq('stadio_pipeline', 'Da sistemare'),
   ])
 
+  const allComputed = (allLeadRows ?? []).map(l => computeLeadFields(l, now))
+  const rischio = leadARischio(allComputed, now, settings.followup_threshold_days)
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold">Lead</h1>
-        <div className="flex items-center gap-4">
-          {(countDaSistemare ?? 0) > 0 && (
-            <Link
-              href="/leads/da-sistemare"
-              className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800 hover:bg-amber-200 transition-colors"
-            >
-              <Wrench className="h-3.5 w-3.5" />
-              {countDaSistemare} da sistemare
-            </Link>
-          )}
-          <LeadQuickStats total={count ?? 0} attivi={countAttivi ?? 0} scaduti={countScaduti ?? 0} />
-        </div>
+    <PreviewShell
+      pageLabel="ANAGRAFICA"
+      titleAccent="TUTTI"
+      titleRest="I LEAD"
+      headerStats={[
+        { value: String(count ?? 0), label: 'TOTALI' },
+        { value: String(countAttivi ?? 0), label: 'ATTIVI', color: ORANGE },
+        { value: String(countScaduti ?? 0), label: 'FOLLOW-UP SCADUTI', color: ORANGE },
+      ]}
+      footerNote={`${allComputed.length} lead · ${rischio.length} follow-up scaduti`}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <LeadFiltersPreview
+          stages={settings.pipeline_stages}
+          owners={availableOwners}
+          leads={computed}
+          countDaSistemare={countDaSistemare ?? 0}
+        />
+        <LeadTablePreview
+          leads={computed}
+          threshold={settings.followup_threshold_days}
+          total={count ?? 0}
+          page={page}
+          pageSize={PAGE_SIZE}
+          hasFilters={hasFilters}
+        />
       </div>
-      <Suspense>
-        <LeadFilters stages={settings.pipeline_stages} owners={availableOwners} leads={computed} />
-      </Suspense>
-      <LeadTable
-        leads={computed}
-        threshold={settings.followup_threshold_days}
-        total={count ?? 0}
-        page={page}
-        pageSize={PAGE_SIZE}
-        hasFilters={hasFilters}
-        sortBy={sortBy}
-        sortDir={sp.sortDir === 'asc' ? 'asc' : 'desc'}
-      />
-    </div>
+    </PreviewShell>
   )
 }

@@ -4,8 +4,6 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ORANGE, GRAY_500 } from '@/components/dashboard-preview/tokens'
 
-// Duplicato di app/leads/[id]/DeleteLeadButton.tsx: stessa logica, redirect
-// verso /leads-preview invece di /leads per restare nell'anteprima UrbiStat.
 export function DeleteLeadButtonPreview({ leadId, leadName }: { leadId: string; leadName: string }) {
   const router = useRouter()
   const [confirm, setConfirm] = useState(false)
@@ -20,7 +18,7 @@ export function DeleteLeadButtonPreview({ leadId, leadName }: { leadId: string; 
       return
     }
     toast.success('Lead eliminato')
-    router.push('/leads-preview')
+    router.push('/leads')
   }
 
   if (confirm) {
