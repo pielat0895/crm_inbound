@@ -7,6 +7,7 @@ import {
   PLUM, ORANGE, GRAY_100, GRAY_BORDER, GRAY_500, WHITE,
   HEADING_FONT,
 } from '@/components/dashboard-preview/tokens'
+import { Logo } from './Logo'
 import { SearchModalPreview } from './SearchModalPreview'
 
 // Font caricati qui invece che in app/layout.tsx: la shell UrbiStat è la sola
@@ -33,18 +34,6 @@ type Props = {
   headerStats?: HeaderStat[]
   /** "9 lead attivi · 4 follow-up scaduti" — calcolato dalla pagina con dati reali. */
   footerNote?: string
-}
-
-// Il file sorgente del logo è un lockup molto largo e basso (~21:1): a piena
-// altezza ci sta solo nel pannello ampio del login. Nelle zone compatte
-// (sidebar/header/drawer mobile) usiamo un marchio testuale, come fa già
-// components/ui/Nav.tsx in produzione.
-function BrandMark({ fontSize }: { fontSize: number }) {
-  return (
-    <span style={{ fontFamily: HEADING_FONT, fontWeight: 700, fontSize, color: WHITE, letterSpacing: '.02em' }}>
-      Urbistat
-    </span>
-  )
 }
 
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
@@ -94,7 +83,7 @@ export function PreviewShell({ children, pageLabel, titleAccent, titleRest, sub,
         }}
       >
         <div style={{ padding: '26px 22px 18px' }}>
-          <BrandMark fontSize={20} />
+          <Logo height={24} />
         </div>
         <div style={{ padding: '0 22px 20px' }}>
           <p style={{ margin: 0, font: "700 11px/1.3 'Open Sans'", letterSpacing: '.14em', color: ORANGE }}>
@@ -122,7 +111,7 @@ export function PreviewShell({ children, pageLabel, titleAccent, titleRest, sub,
           padding: '14px 18px', background: PLUM,
         }}
       >
-        <BrandMark fontSize={16} />
+        <Logo height={19} />
         <button
           onClick={() => setDrawerOpen(true)}
           style={{
@@ -142,7 +131,7 @@ export function PreviewShell({ children, pageLabel, titleAccent, titleRest, sub,
           />
           <div style={{ position: 'fixed', top: 0, left: 0, height: '100%', width: 264, zIndex: 50, background: PLUM, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 22px' }}>
-              <BrandMark fontSize={17} />
+              <Logo height={22} />
               <button
                 onClick={() => setDrawerOpen(false)}
                 style={{ border: 'none', background: 'transparent', color: WHITE, font: "600 16px/1 'Open Sans'", cursor: 'pointer' }}

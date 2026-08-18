@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Brygada_1918, Open_Sans } from 'next/font/google'
 import { PLUM, ORANGE, GRAY_BORDER, GRAY_500 } from '@/components/dashboard-preview/tokens'
+import { Logo } from '@/components/preview/Logo'
 
 const heading = Brygada_1918({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-heading' })
 const body = Open_Sans({ subsets: ['latin'], weight: ['300', '400', '600', '700', '800'], variable: '--font-body' })
@@ -45,12 +46,9 @@ export default function LoginPage() {
           alt=""
           style={{ position: 'absolute', right: -60, bottom: -60, width: 340, opacity: 0.32 }}
         />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/urbistat/urbistat-logo.png"
-          alt="UrbiStat"
-          style={{ height: 34, maxWidth: '100%', filter: 'invert(1) brightness(2) saturate(0)', position: 'relative' }}
-        />
+        <div style={{ position: 'relative' }}>
+          <Logo height={42} />
+        </div>
         <div style={{ position: 'relative' }}>
           <p style={{ margin: '0 0 12px', font: "700 11px/1 'Open Sans'", letterSpacing: '.14em', color: ORANGE }}>
             CRM INBOUND
